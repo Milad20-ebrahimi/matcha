@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-
+import {AddressProvider,} from "@/features/addresses/address.context";
+import {ProfileProvider,} from "@/features/profile/profile.context";
 import "./globals.css";
 
 import {
@@ -36,9 +37,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable}`}
       >
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+<AuthProvider>
+  <AddressProvider>
+    <ProfileProvider>
+      {children}
+    </ProfileProvider>
+  </AddressProvider>
+</AuthProvider>
       </body>
     </html>
   );

@@ -8,6 +8,10 @@ import {
 } from "./user.repository.js";
 
 import {
+  findUserProfileByUserId,
+} from "./user-profile.repository.js";
+
+import {
   updateUserProfileService,
 } from "./user.service.js";
 
@@ -36,6 +40,11 @@ export async function getMeController(
       });
     }
 
+    const profile =
+      await findUserProfileByUserId(
+        userId
+      );
+
     return res.status(200).json({
       message:
         "اطلاعات کاربر دریافت شد.",
@@ -43,24 +52,61 @@ export async function getMeController(
       data: {
         id: user.id,
         roleId: user.roleId,
+
         firstName:
           user.firstName,
+
         lastName:
           user.lastName,
+
         email:
           user.email,
+
         phone:
           user.phone,
+
         phoneVerified:
           user.phoneVerified,
+
         emailVerified:
           user.emailVerified,
+
         isActive:
           user.isActive,
+
         lastLoginAt:
           user.lastLoginAt,
+
         createdAt:
           user.createdAt,
+
+        updatedAt:
+          user.updatedAt,
+
+        profile: profile
+          ? {
+              id:
+                profile.id,
+
+              dateOfBirth:
+                profile.dateOfBirth,
+
+              job:
+                profile.job,
+
+              bio:
+                profile.bio,
+
+              avatarUrl:
+                profile.avatarUrl,
+
+              createdAt:
+                profile.createdAt,
+
+              updatedAt:
+                profile.updatedAt,
+            }
+          : null,
       },
     });
   } catch (error) {
@@ -95,6 +141,10 @@ export async function updateMeController(
       firstName,
       lastName,
       email,
+      dateOfBirth,
+      job,
+      bio,
+      avatarUrl,
     } = req.body;
 
     if (
@@ -127,13 +177,62 @@ export async function updateMeController(
       });
     }
 
-    const user =
+    if (
+      dateOfBirth !== undefined &&
+      dateOfBirth !== null &&
+      typeof dateOfBirth !== "string"
+    ) {
+      return res.status(400).json({
+        message:
+          "تاریخ تولد باید به صورت متن باشد.",
+      });
+    }
+
+    if (
+      job !== undefined &&
+      job !== null &&
+      typeof job !== "string"
+    ) {
+      return res.status(400).json({
+        message:
+          "شغل باید به صورت متن باشد.",
+      });
+    }
+
+    if (
+      bio !== undefined &&
+      bio !== null &&
+      typeof bio !== "string"
+    ) {
+      return res.status(400).json({
+        message:
+          "بیوگرافی باید به صورت متن باشد.",
+      });
+    }
+
+    if (
+      avatarUrl !== undefined &&
+      avatarUrl !== null &&
+      typeof avatarUrl !== "string"
+    ) {
+      return res.status(400).json({
+        message:
+          "آدرس تصویر باید به صورت متن باشد.",
+      });
+    }
+
+    const result =
       await updateUserProfileService(
         userId,
         {
           firstName,
           lastName,
           email,
+
+          dateOfBirth,
+          job,
+          bio,
+          avatarUrl,
         }
       );
 
@@ -142,28 +241,64 @@ export async function updateMeController(
         "اطلاعات کاربر با موفقیت بروزرسانی شد.",
 
       data: {
-        id: user.id,
-        roleId: user.roleId,
+        id:
+          result.user.id,
+
+        roleId:
+          result.user.roleId,
+
         firstName:
-          user.firstName,
+          result.user.firstName,
+
         lastName:
-          user.lastName,
+          result.user.lastName,
+
         email:
-          user.email,
+          result.user.email,
+
         phone:
-          user.phone,
+          result.user.phone,
+
         phoneVerified:
-          user.phoneVerified,
+          result.user.phoneVerified,
+
         emailVerified:
-          user.emailVerified,
+          result.user.emailVerified,
+
         isActive:
-          user.isActive,
+          result.user.isActive,
+
         lastLoginAt:
-          user.lastLoginAt,
+          result.user.lastLoginAt,
+
         createdAt:
-          user.createdAt,
+          result.user.createdAt,
+
         updatedAt:
-          user.updatedAt,
+          result.user.updatedAt,
+
+        profile: {
+          id:
+            result.profile.id,
+
+          dateOfBirth:
+            result.profile.dateOfBirth,
+
+          job:
+            result.profile.job,
+
+          bio:
+            result.profile.bio,
+
+          avatarUrl:
+            result.profile.avatarUrl,
+
+          createdAt:
+            result.profile.createdAt,
+
+          updatedAt:
+            result.profile.updatedAt,
+        },
       },
     });
   } catch (error) {

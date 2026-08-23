@@ -58,8 +58,9 @@ export function AuthProvider({
   const [isLoading, setIsLoading] =
     useState(true);
 
-  useEffect(() => {
-    async function restoreSession() {
+useEffect(() => {
+  async function restoreSession() {
+    try {
       const savedSession =
         getSession();
 
@@ -72,43 +73,36 @@ export function AuthProvider({
         savedSession
       );
 
-      try {
-        const response =
-          await getMe(
-            savedSession.accessToken
-          );
-
-        /*
-         * apiRequest اگر Access Token
-         * منقضی شده باشد، خودش Refresh می‌کند.
-         *
-         * بعد از Refresh، Session جدید
-         * داخل storage ذخیره شده است.
-         */
-        const currentSession =
-          getSession();
-
-        setSessionState(
-          currentSession ||
-            savedSession
+      const response =
+        await getMe(
+          savedSession.accessToken
         );
 
-        setUser(
-          response.data
-        );
-      } catch {
-        clearSession();
+      const currentSession =
+        getSession();
 
-        setSessionState(null);
-        setUser(null);
-      } finally {
-        setIsLoading(false);
-      }
+      setSessionState(
+        currentSession ||
+          savedSession
+      );
+
+      setUser(
+        response.data
+      );
+    } catch (error) {
+
+
+      clearSession();
+
+      setSessionState(null);
+      setUser(null);
+    } finally {
+      setIsLoading(false);
     }
+  }
 
-    restoreSession();
-  }, []);
-
+  restoreSession();
+}, []);
   async function setSession(
     newSession: Session
   ) {
