@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import authRoutes from "./modules/auth/auth.routes.js";
 import userRoutes from "./modules/users/user.routes.js";
+import addressRoutes from "./modules/addresses/address.routes.js";
 
 const app = express();
 
@@ -21,4 +22,6 @@ app.get("/api/health", (_req, res) => {
 });
 app.use("/api/v1/auth",authRoutes);
 app.use("/api/v1/users",userRoutes);
+app.use("/api/v1/addresses",addressRoutes);
+
 export default app;
