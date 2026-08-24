@@ -1,27 +1,34 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import {AddressProvider,} from "@/features/addresses/address.context";
-import {ProfileProvider,} from "@/features/profile/profile.context";
+import { Vazirmatn } from "next/font/google";
+
 import "./globals.css";
 
-import {
-  AuthProvider,
-} from "@/features/auth/auth.context";
+import Navbar from "@/components/shared/Navbar";
+import Footer from "@/components/shared/Footer";
+import { AuthProvider } from "@/features/auth/auth.context";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const vazirmatn = Vazirmatn({
+  subsets: ["arabic"],
+  variable: "--font-vazir",
 });
 
 export const metadata: Metadata = {
-  title: "کافه ماچا",
+  title: {
+    default: "MATCH--CAFE | تجربه اصیل ماچا و قهوه",
+    template: "%s | MATCH--CAFE",
+  },
+
   description:
-    "کافه و فروشگاه تخصصی ماچا",
+    "کافه و فروشگاه تخصصی ماچا، چای، قهوه و ابزارهای دم‌آوری پریمیوم",
+
+  keywords: [
+    "Matcha",
+    "Coffee",
+    "Tea",
+    "Cafe",
+    "ماچا",
+    "قهوه",
+  ],
 };
 
 export default function RootLayout({
@@ -33,17 +40,20 @@ export default function RootLayout({
     <html
       lang="fa"
       dir="rtl"
+      className={`${vazirmatn.variable} antialiased`}
     >
-      <body
-        className={`${geistSans.variable} ${geistMono.variable}`}
-      >
-<AuthProvider>
-  <AddressProvider>
-    <ProfileProvider>
-      {children}
-    </ProfileProvider>
-  </AddressProvider>
-</AuthProvider>
+      <body className="min-h-screen flex flex-col bg-white text-slate-900">
+
+        <AuthProvider>
+
+          <Navbar />
+
+          <main className="flex-1">
+            {children}
+          </main>
+
+        </AuthProvider>
+        <Footer/>
       </body>
     </html>
   );
