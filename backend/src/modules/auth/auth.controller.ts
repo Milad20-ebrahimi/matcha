@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 
 import {
   requestOtp,
+  requestRegistrationOtp,
   verifyOtp,
   completeRegistration,
 } from "./auth.service.js";
@@ -231,6 +232,47 @@ export async function logoutController(
     return res.status(500).json({
       message:
         "خطا در خروج از حساب.",
+    });
+  }
+}
+export async function requestRegistrationOtpController(
+  req: Request,
+  res: Response
+) {
+  try {
+    const { phone } = req.body;
+
+    if (
+      typeof phone !== "string" ||
+      !phone.trim()
+    ) {
+      return res.status(400).json({
+        message:
+          "شماره موبایل الزامی است.",
+      });
+    }
+
+    const result =
+      await requestRegistrationOtp(
+        phone
+      );
+
+    return res.status(200).json({
+      message:
+        "کد تأیید ارسال شد.",
+      data: result,
+    });
+  } catch (error) {
+    console.error(
+      "Request registration OTP error:",
+      error
+    );
+
+    return res.status(400).json({
+      message:
+        error instanceof Error
+          ? error.message
+          : "خطا در درخواست کد ثبت‌نام.",
     });
   }
 }

@@ -8,6 +8,7 @@ import {
 
 import {
   hashOtp,
+  verifyOtp as verifyOtpHash,
 } from "./otp.crypto.js";
 
 import {
@@ -17,18 +18,19 @@ import {
   incrementOtpAttempts,
   markOtpAsVerified,
 } from "./auth.repository.js";
+
 import {
   findUserByPhone,
 } from "../users/user.repository.js";
-import {
-  verifyOtp as verifyOtpHash,
-} from "./otp.crypto.js";
+
 import {
   registerUser,
 } from "../users/user.service.js";
+
 import {
   createAuthSession,
 } from "./auth.session.js";
+
 const OTP_EXPIRES_IN_MINUTES = 2;
 
 export async function requestOtp(
@@ -38,50 +40,55 @@ export async function requestOtp(
     normalizeAndValidateIranPhone(
       phone
     );
-    const latestOtp =
-  await findActiveOtpByPhone(
-    normalizedPhone
-  );
 
-if (latestOtp) {
-  const secondsSinceCreation = Math.floor(
-    (Date.now() -
-      latestOtp.createdAt.getTime()) /
-      1000
-  );
-
-  if (secondsSinceCreation < 60) {
-    const secondsRemaining =
-      60 - secondsSinceCreation;
-
-    throw new Error(
-      `لطفاً ${secondsRemaining} ثانیه دیگر دوباره تلاش کنید.`
+  const latestOtp =
+    await findActiveOtpByPhone(
+      normalizedPhone
     );
+
+  if (latestOtp) {
+    const secondsSinceCreation =
+      Math.floor(
+        (
+          Date.now() -
+          latestOtp.createdAt.getTime()
+        ) / 1000
+      );
+
+    if (secondsSinceCreation < 60) {
+      const secondsRemaining =
+        60 - secondsSinceCreation;
+
+      throw new Error(
+        `لطفاً ${secondsRemaining} ثانیه دیگر دوباره تلاش کنید.`
+      );
+    }
   }
-}
-  const code = generateOtp();
+
+  const code =
+    generateOtp();
 
   const codeHash =
     await hashOtp(code);
 
-  const expiresAt = new Date(
-    Date.now() +
+  const expiresAt =
+    new Date(
+      Date.now() +
       OTP_EXPIRES_IN_MINUTES *
-        60 *
-        1000
-  );
+      60 *
+      1000
+    );
 
-  const otp = await createOtp({
-    phone: normalizedPhone,
-    codeHash,
-    expiresAt,
-  });
+  const otp =
+    await createOtp({
+      phone: normalizedPhone,
+      codeHash,
+      expiresAt,
+    });
 
   /*
    * فعلاً SMS Provider نداریم.
-   *
-   * در محیط توسعه OTP را در Console
-   * نمایش می‌دهیم.
+   * در محیط توسعه OTP داخل Console نمایش داده می‌شود.
    */
   console.log(
     `[DEV OTP] ${normalizedPhone}: ${code}`
@@ -93,6 +100,7 @@ if (latestOtp) {
     expiresAt: otp.expiresAt,
   };
 }
+
 export async function verifyOtp(
   otpId: string,
   code: string
@@ -104,7 +112,9 @@ export async function verifyOtp(
   }
 
   const otp =
-    await findOtpById(otpId);
+    await findOtpById(
+      otpId
+    );
 
   if (!otp) {
     throw new Error(
@@ -112,9 +122,7 @@ export async function verifyOtp(
     );
   }
 
-  if (
-    otp.verifiedAt
-  ) {
+  if (otp.verifiedAt) {
     throw new Error(
       "این کد قبلاً استفاده شده است."
     );
@@ -128,7 +136,9 @@ export async function verifyOtp(
     );
   }
 
-  if (otp.attempts >= 5) {
+  if (
+    otp.attempts >= 5
+  ) {
     throw new Error(
       "تعداد تلاش‌های مجاز تمام شده است."
     );
@@ -149,44 +159,70 @@ export async function verifyOtp(
       "کد تأیید اشتباه است."
     );
   }
-await markOtpAsVerified(otp.id);
 
-const user =
-  await findUserByPhone(
-    otp.phone
+  await markOtpAsVerified(
+    otp.id
   );
 
-if (!user) {
+  const user =
+    await findUserByPhone(
+      otp.phone
+    );
+
+  /*
+   * کاربر جدید:
+   * فعلاً Session ساخته نمی‌شود.
+   * ابتدا باید complete-registration انجام شود.
+   */
+  if (!user) {
+    return {
+      success: true,
+      phone: otp.phone,
+      isNewUser: true,
+      needsName: true,
+    };
+  }
+
+  /*
+   * کاربر موجود:
+   * مستقیماً Session ساخته می‌شود.
+   */
+  const session =
+    await createAuthSession({
+      userId: user.id,
+      roleId: user.roleId,
+    });
+
   return {
     success: true,
     phone: otp.phone,
-    isNewUser: true,
-    needsName: true,
+    isNewUser: false,
+    needsName: false,
+    userId: user.id,
+    accessToken:
+      session.accessToken,
+    refreshToken:
+      session.refreshToken,
   };
 }
 
-const session =
-  await createAuthSession({
-    userId: user.id,
-    roleId: user.roleId,
-  });
-
-return {
-  success: true,
-  phone: otp.phone,
-  isNewUser: false,
-  needsName: false,
-  userId: user.id,
-  accessToken: session.accessToken,
-  refreshToken: session.refreshToken,
-};
-}
 export async function completeRegistration(
   otpId: string,
   firstName: string
 ) {
+  const normalizedFirstName =
+    firstName.trim();
+
+  if (!normalizedFirstName) {
+    throw new Error(
+      "نام کاربر الزامی است."
+    );
+  }
+
   const otp =
-    await findOtpById(otpId);
+    await findOtpById(
+      otpId
+    );
 
   if (!otp) {
     throw new Error(
@@ -200,22 +236,121 @@ export async function completeRegistration(
     );
   }
 
-const result =
-  await registerUser({
-    phone: otp.phone,
-    firstName,
-  });
+  /*
+   * بررسی می‌کنیم که برای این شماره
+   * کاربری از قبل ساخته نشده باشد.
+   */
+  const existingUser =
+    await findUserByPhone(
+      otp.phone
+    );
 
-const session =
-  await createAuthSession({
-    userId: result.user.id,
-    roleId: result.user.roleId,
-  });
+  if (existingUser) {
+    throw new Error(
+      "این شماره موبایل قبلاً ثبت‌نام کرده است."
+    );
+  }
 
-return {
-  success: true,
-  user: result.user,
-  accessToken: session.accessToken,
-  refreshToken: session.refreshToken,
-};
+  const result =
+    await registerUser({
+      phone: otp.phone,
+      firstName:
+        normalizedFirstName,
+    });
+
+  /*
+   * بعد از ساخت کاربر،
+   * Session ایجاد می‌کنیم.
+   */
+  const session =
+    await createAuthSession({
+      userId:
+        result.user.id,
+      roleId:
+        result.user.roleId,
+    });
+
+  return {
+    success: true,
+
+    user: result.user,
+
+    profile:
+      result.profile,
+
+    accessToken:
+      session.accessToken,
+
+    refreshToken:
+      session.refreshToken,
+  };
+}
+export async function requestRegistrationOtp(
+  phone: string
+) {
+  const normalizedPhone =
+    normalizeAndValidateIranPhone(phone);
+
+  const existingUser =
+    await findUserByPhone(normalizedPhone);
+
+  if (existingUser) {
+    throw new Error(
+      "این شماره موبایل قبلاً ثبت‌نام کرده است. لطفاً از صفحه ورود وارد شوید."
+    );
+  }
+
+  const latestOtp =
+    await findActiveOtpByPhone(
+      normalizedPhone
+    );
+
+  if (latestOtp) {
+    const secondsSinceCreation =
+      Math.floor(
+        (Date.now() -
+          latestOtp.createdAt.getTime()) /
+          1000
+      );
+
+    if (secondsSinceCreation < 60) {
+      const secondsRemaining =
+        60 - secondsSinceCreation;
+
+      throw new Error(
+        `لطفاً ${secondsRemaining} ثانیه دیگر دوباره تلاش کنید.`
+      );
+    }
+  }
+
+  const code =
+    generateOtp();
+
+  const codeHash =
+    await hashOtp(code);
+
+  const expiresAt =
+    new Date(
+      Date.now() +
+        OTP_EXPIRES_IN_MINUTES *
+          60 *
+          1000
+    );
+
+  const otp =
+    await createOtp({
+      phone: normalizedPhone,
+      codeHash,
+      expiresAt,
+    });
+
+  console.log(
+    `[DEV REGISTER OTP] ${normalizedPhone}: ${code}`
+  );
+
+  return {
+    otpId: otp.id,
+    phone: normalizedPhone,
+    expiresAt: otp.expiresAt,
+  };
 }

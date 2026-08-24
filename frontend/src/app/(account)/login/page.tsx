@@ -215,10 +215,7 @@ sessionStorage.setItem(
   phone.trim(),
 );
 
-        router.push(
-          "/register/complete",
-        );
-
+       router.push("/register");
         return;
       }
 

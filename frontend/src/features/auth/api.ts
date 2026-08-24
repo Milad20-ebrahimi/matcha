@@ -101,3 +101,16 @@ export async function logout(
     }
   );
 }
+export async function requestRegistrationOtp(
+  phone: string
+) {
+  return apiRequest<RequestOtpResponse>(
+    "/auth/request-registration-otp",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        phone,
+      }),
+    }
+  );
+}
