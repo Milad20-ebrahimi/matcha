@@ -1,84 +1,163 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import Container from "@/components/shared/Container";
-import Button from "@/components/ui/button";
 
 
 export default function HeroSection() {
   return (
-    <section className="overflow-hidden bg-white py-20">
+    <section
+      className="
+      relative
+      overflow-hidden
+      bg-cream
+      pt-32
+      pb-20
+      "
+    >
 
       <Container>
 
-        <div className="grid items-center gap-12 md:grid-cols-2">
+        <div
+          className="
+          grid
+          items-center
+          gap-12
+          md:grid-cols-2
+          "
+        >
+
 
           {/* Content */}
-          <div className="text-right">
 
-            <p className="mb-4 text-sm font-medium text-green-700">
-              MATCHA CAFE
-            </p>
+          <div
+            className="
+            text-right
+            "
+          >
 
-            <h1 className="text-4xl font-bold leading-tight text-slate-900 md:text-6xl">
+            <span
+              className="
+              mb-5
+              inline-block
+              rounded-full
+              bg-sage/30
+              px-5
+              py-2
+              text-sm
+              font-medium
+              text-forest
+              "
+            >
+              MATCH--CAFE
+            </span>
+
+
+            <h1
+              className="
+              font-serif
+              text-4xl
+              font-bold
+              leading-[1.5]
+              text-forest
+              md:text-6xl
+              "
+            >
               تجربه اصیل ماچا
               <br />
               در خانه شما
             </h1>
 
 
-            <p className="mt-6 max-w-xl text-base leading-8 text-slate-600">
-              بهترین ماچا، قهوه و محصولات پریمیوم را با کیفیت کافه‌ای
-              در خانه خود تجربه کنید.
+            <p
+              className="
+              mt-6
+              max-w-xl
+              text-base
+              leading-8
+              text-forest/70
+              "
+            >
+              بهترین ماچا، قهوه، چای و محصولات پریمیوم
+              را با کیفیت کافه‌ای در خانه خود تجربه کنید.
             </p>
 
 
-            <div className="mt-8 flex gap-4">
+            <div
+              className="
+              mt-8
+              flex
+              flex-wrap
+              gap-4
+              "
+            >
 
-              <Link href="/shop">
-                <Button>
-                  مشاهده محصولات
-                </Button>
+              <Link
+                href="/shop"
+                className="
+                rounded-full
+                bg-amber
+                px-7
+                py-3.5
+                text-sm
+                font-medium
+                text-white
+                transition
+                hover:bg-amber-dark
+                "
+              >
+                مشاهده محصولات
               </Link>
 
 
               <Link
                 href="/cafe"
                 className="
-                  rounded-md
-                  border
-                  border-slate-300
-                  px-6
-                  py-3
-                  text-sm
-                  font-medium
-                  text-slate-700
-                  transition
-                  hover:bg-slate-50
+                rounded-full
+                border
+                border-forest/20
+                px-7
+                py-3.5
+                text-sm
+                font-medium
+                text-forest
+                transition
+                hover:bg-white
                 "
               >
-                مشاهده کافه
+                منوی کافه
               </Link>
 
+
             </div>
+
 
           </div>
 
 
-          {/* Image Placeholder */}
+
+          {/* Image */}
+
           <div
             className="
-              flex
-              h-[420px]
-              items-center
-              justify-center
-              rounded-3xl
-              bg-green-900
+            relative
+            h-[420px]
+            overflow-hidden
+            rounded-[3rem]
+            bg-sage/20
             "
           >
 
-            <span className="text-xl font-semibold text-white">
-              Matcha Product Image
-            </span>
+            <Image
+              src="/images/matcha-hero.jpg"
+              alt="Matcha Cafe"
+              fill
+              priority
+              className="
+              object-cover
+              "
+            />
+
 
           </div>
 
@@ -86,6 +165,7 @@ export default function HeroSection() {
         </div>
 
       </Container>
+
 
     </section>
   );
