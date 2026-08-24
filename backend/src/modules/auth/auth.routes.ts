@@ -7,8 +7,13 @@ import {
   completeRegistrationController,
   refreshController,
   logoutController,
+  registerWithEmailController,
+  loginWithEmailController,
 } from "./auth.controller.js";
-
+import {
+  requestEmailVerificationController,
+  verifyEmailVerificationController,
+} from "./email-verification.controller.js";
 const router = Router();
 
 router.post(
@@ -39,6 +44,24 @@ router.post(
 router.post(
   "/logout",
   logoutController
+);
+router.post(
+  "/register-email",
+  registerWithEmailController
+);
+
+router.post(
+  "/login-email",
+  loginWithEmailController
+);
+router.post(
+  "/request-email-verification",
+  requestEmailVerificationController
+);
+
+router.post(
+  "/verify-email",
+  verifyEmailVerificationController
 );
 
 export default router;

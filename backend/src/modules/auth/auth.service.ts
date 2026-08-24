@@ -1,7 +1,7 @@
 import {
   normalizeAndValidateIranPhone,
 } from "../../utils/phone.js";
-
+import bcrypt from "bcrypt";
 import {
   generateOtp,
 } from "./otp.util.js";
@@ -18,11 +18,15 @@ import {
   incrementOtpAttempts,
   markOtpAsVerified,
 } from "./auth.repository.js";
-
 import {
   findUserByPhone,
+  findUserByEmail,
+  findDefaultUserRole,
+  createEmailUser,
 } from "../users/user.repository.js";
-
+import {
+  createUserProfile,
+} from "../users/user-profile.repository.js";
 import {
   registerUser,
 } from "../users/user.service.js";
@@ -352,5 +356,182 @@ export async function requestRegistrationOtp(
     otpId: otp.id,
     phone: normalizedPhone,
     expiresAt: otp.expiresAt,
+  };
+}
+export async function registerWithEmail(
+  email: string,
+  password: string,
+  firstName: string
+) {
+  const normalizedEmail =
+    email.trim().toLowerCase();
+
+  const normalizedFirstName =
+    firstName.trim();
+
+  if (!normalizedEmail) {
+    throw new Error(
+      "ایمیل الزامی است."
+    );
+  }
+
+  if (
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+      normalizedEmail
+    )
+  ) {
+    throw new Error(
+      "فرمت ایمیل صحیح نیست."
+    );
+  }
+
+  if (!normalizedFirstName) {
+    throw new Error(
+      "نام کاربر الزامی است."
+    );
+  }
+
+  if (password.length < 8) {
+    throw new Error(
+      "رمز عبور باید حداقل ۸ کاراکتر باشد."
+    );
+  }
+
+  const existingUser =
+    await findUserByEmail(
+      normalizedEmail
+    );
+
+  if (existingUser) {
+    throw new Error(
+      "این ایمیل قبلاً ثبت‌نام کرده است."
+    );
+  }
+
+  const role =
+    await findDefaultUserRole();
+
+  const passwordHash =
+    await bcrypt.hash(
+      password,
+      12
+    );
+
+  const user =
+  await createEmailUser({
+    roleId: role.id,
+    email: normalizedEmail,
+    firstName:
+      normalizedFirstName,
+    passwordHash,
+  });
+
+const profile =
+  await createUserProfile(
+    user.id
+  );
+
+const session =
+  await createAuthSession({
+      userId: user.id,
+      roleId: user.roleId,
+    });
+
+  /*
+   * passwordHash نباید به Frontend ارسال شود.
+   */
+  const {
+    passwordHash: _passwordHash,
+    ...safeUser
+  } = user;
+
+return {
+  success: true,
+  user,
+  profile,
+  accessToken:
+    session.accessToken,
+  refreshToken:
+    session.refreshToken,
+};
+}
+
+export async function loginWithEmail(
+  email: string,
+  password: string
+) {
+  const normalizedEmail =
+    email.trim().toLowerCase();
+
+  if (!normalizedEmail) {
+    throw new Error(
+      "ایمیل الزامی است."
+    );
+  }
+
+  if (!password) {
+    throw new Error(
+      "رمز عبور الزامی است."
+    );
+  }
+
+  const user =
+    await findUserByEmail(
+      normalizedEmail
+    );
+
+  if (!user) {
+    throw new Error(
+      "ایمیل یا رمز عبور اشتباه است."
+    );
+  }
+
+  if (!user.passwordHash) {
+    throw new Error(
+      "این حساب با ایمیل و رمز عبور ثبت نشده است."
+    );
+  }
+
+  if (!user.isActive) {
+    throw new Error(
+      "حساب کاربری شما غیرفعال است."
+    );
+  }
+
+  const passwordValid =
+    await bcrypt.compare(
+      password,
+      user.passwordHash
+    );
+
+  if (!passwordValid) {
+    throw new Error(
+      "ایمیل یا رمز عبور اشتباه است."
+    );
+  }
+
+  const session =
+    await createAuthSession({
+      userId: user.id,
+      roleId: user.roleId,
+    });
+
+  /*
+   * passwordHash فقط برای بررسی رمز
+   * در Backend استفاده می‌شود و نباید
+   * در Response قرار بگیرد.
+   */
+  const {
+    passwordHash: _passwordHash,
+    ...safeUser
+  } = user;
+
+  return {
+    success: true,
+    user: safeUser,
+    accessToken:
+      session.accessToken,
+    refreshToken:
+      session.refreshToken,
   };
 }

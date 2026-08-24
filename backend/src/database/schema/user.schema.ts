@@ -31,9 +31,7 @@ export const users = pgTable("users", {
 
   phone: varchar("phone", {
     length: 20,
-  })
-    .notNull()
-    .unique(),
+  }).unique(),
 
   passwordHash: varchar("password_hash", {
     length: 255,

@@ -1,33 +1,42 @@
-
 "use client";
 
 import {
   FormEvent,
+  Suspense,
   useState,
 } from "react";
 
-import { useRouter } from "next/navigation";
+import {
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
 
 import {
   requestOtp,
   verifyOtp,
+  loginWithEmail,
 } from "@/features/auth/api";
 
 import {
   useAuthContext,
 } from "@/features/auth/auth.context";
 
-type LoginMode = "phone";
+type LoginMode = "phone" | "email";
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const {
     setSession,
   } = useAuthContext();
 
-  const [mode] =
-    useState<LoginMode>("phone");
+  const [mode, setMode] =
+    useState<LoginMode>(() => {
+      return searchParams.get("mode") === "email"
+        ? "email"
+        : "phone";
+    });
 
   // ==========================================
   // PHONE
@@ -54,6 +63,20 @@ export default function LoginPage() {
   ] = useState(false);
 
   // ==========================================
+  // EMAIL
+  // ==========================================
+
+  const [
+    email,
+    setEmail,
+  ] = useState("");
+
+  const [
+    password,
+    setPassword,
+  ] = useState("");
+
+  // ==========================================
   // COMMON
   // ==========================================
 
@@ -68,7 +91,7 @@ export default function LoginPage() {
   ] = useState(false);
 
   // ==========================================
-  // REQUEST OTP
+  // REQUEST PHONE OTP
   // ==========================================
 
   async function handleRequestOtp() {
@@ -79,7 +102,7 @@ export default function LoginPage() {
 
     if (!normalizedPhone) {
       setError(
-        "شماره موبایل را وارد کنید.",
+        "لطفاً شماره موبایل را وارد کنید."
       );
 
       return;
@@ -87,11 +110,11 @@ export default function LoginPage() {
 
     if (
       !/^09\d{9}$/.test(
-        normalizedPhone,
+        normalizedPhone
       )
     ) {
       setError(
-        "شماره موبایل معتبر نیست.",
+        "شماره موبایل معتبر نیست."
       );
 
       return;
@@ -102,32 +125,30 @@ export default function LoginPage() {
 
       const response =
         await requestOtp(
-          normalizedPhone,
+          normalizedPhone
         );
 
-      console.log(
-        "Request OTP response:",
-        response,
-      );
-
       setOtpId(
-        response.data.otpId,
+        response.data.otpId
       );
 
-      setOtpSent(true);
+      setPhone(
+        response.data.phone
+      );
 
       setOtp("");
 
+      setOtpSent(true);
     } catch (error) {
       console.error(
         "Request OTP error:",
-        error,
+        error
       );
 
       setError(
         error instanceof Error
           ? error.message
-          : "ارسال کد تأیید ناموفق بود.",
+          : "ارسال کد تأیید ناموفق بود."
       );
     } finally {
       setIsLoading(false);
@@ -135,11 +156,11 @@ export default function LoginPage() {
   }
 
   // ==========================================
-  // VERIFY OTP
+  // VERIFY PHONE OTP
   // ==========================================
 
   async function handleVerifyOtp(
-    event: FormEvent<HTMLFormElement>,
+    event: FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
 
@@ -150,7 +171,7 @@ export default function LoginPage() {
 
     if (!normalizedOtp) {
       setError(
-        "کد تأیید را وارد کنید.",
+        "لطفاً کد تأیید را وارد کنید."
       );
 
       return;
@@ -158,11 +179,11 @@ export default function LoginPage() {
 
     if (
       !/^\d{6}$/.test(
-        normalizedOtp,
+        normalizedOtp
       )
     ) {
       setError(
-        "کد تأیید باید ۶ رقم باشد.",
+        "کد تأیید باید ۶ رقم باشد."
       );
 
       return;
@@ -170,7 +191,7 @@ export default function LoginPage() {
 
     if (!otpId) {
       setError(
-        "شناسه کد تأیید پیدا نشد. دوباره درخواست کد کنید.",
+        "شناسه کد تأیید پیدا نشد. دوباره درخواست کد کنید."
       );
 
       return;
@@ -182,13 +203,8 @@ export default function LoginPage() {
       const response =
         await verifyOtp(
           otpId,
-          normalizedOtp,
+          normalizedOtp
         );
-
-      console.log(
-        "Verify OTP response:",
-        response,
-      );
 
       const {
         accessToken,
@@ -207,15 +223,18 @@ export default function LoginPage() {
       ) {
         sessionStorage.setItem(
           "matcha_pending_otp_id",
-          otpId,
+          otpId
         );
 
-sessionStorage.setItem(
-  "matcha_pending_phone",
-  phone.trim(),
-);
+        sessionStorage.setItem(
+          "matcha_pending_phone",
+          phone.trim()
+        );
 
-       router.push("/register");
+        router.push(
+          "/register?mode=phone"
+        );
+
         return;
       }
 
@@ -228,7 +247,7 @@ sessionStorage.setItem(
         !refreshToken
       ) {
         throw new Error(
-          "توکن ورود از سرور دریافت نشد.",
+          "توکن ورود از سرور دریافت نشد."
         );
       }
 
@@ -238,17 +257,103 @@ sessionStorage.setItem(
       });
 
       router.push("/");
-
     } catch (error) {
       console.error(
         "Verify OTP error:",
-        error,
+        error
       );
 
       setError(
         error instanceof Error
           ? error.message
-          : "کد تأیید نامعتبر است.",
+          : "کد تأیید نامعتبر است."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  // ==========================================
+  // EMAIL LOGIN
+  // ==========================================
+
+  async function handleEmailLogin(
+    event: FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
+
+    setError(null);
+
+    const normalizedEmail =
+      email.trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      setError(
+        "لطفاً ایمیل را وارد کنید."
+      );
+
+      return;
+    }
+
+    if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        normalizedEmail
+      )
+    ) {
+      setError(
+        "فرمت ایمیل صحیح نیست."
+      );
+
+      return;
+    }
+
+    if (!password) {
+      setError(
+        "لطفاً رمز عبور را وارد کنید."
+      );
+
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      const response =
+        await loginWithEmail(
+          normalizedEmail,
+          password
+        );
+
+      const {
+        accessToken,
+        refreshToken,
+      } = response.data;
+
+      if (
+        !accessToken ||
+        !refreshToken
+      ) {
+        throw new Error(
+          "توکن ورود از سرور دریافت نشد."
+        );
+      }
+
+      await setSession({
+        accessToken,
+        refreshToken,
+      });
+
+      router.push("/");
+    } catch (error) {
+      console.error(
+        "Email login error:",
+        error
+      );
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "ایمیل یا رمز عبور اشتباه است."
       );
     } finally {
       setIsLoading(false);
@@ -267,6 +372,32 @@ sessionStorage.setItem(
   }
 
   // ==========================================
+  // CHANGE MODE
+  // ==========================================
+
+  function handleChangeMode(
+    nextMode: LoginMode
+  ) {
+    setMode(nextMode);
+
+    setError(null);
+
+    if (
+      nextMode === "phone"
+    ) {
+      setPassword("");
+    }
+
+    if (
+      nextMode === "email"
+    ) {
+      setOtpSent(false);
+      setOtp("");
+      setOtpId("");
+    }
+  }
+
+  // ==========================================
   // UI
   // ==========================================
 
@@ -277,9 +408,7 @@ sessionStorage.setItem(
     >
       <div className="w-full max-w-md rounded-2xl border border-gray-100 bg-white p-6 shadow-sm sm:p-8">
 
-        {/* ======================================
-            BRAND
-        ====================================== */}
+        {/* BRAND */}
 
         <div className="mb-8 text-center">
 
@@ -291,15 +420,47 @@ sessionStorage.setItem(
             ورود به Matcha Cafe
           </h1>
 
-          <p className="mt-2 text-sm text-gray-500">
-            برای ورود شماره موبایل خود را وارد کنید
+          <p className="mt-2 text-sm leading-6 text-gray-500">
+            برای ورود به حساب کاربری خود یکی از روش‌های زیر را انتخاب کنید.
           </p>
 
         </div>
 
-        {/* ======================================
-            ERROR
-        ====================================== */}
+        {/* MODE SWITCH */}
+
+        <div className="mb-6 grid grid-cols-2 rounded-xl bg-gray-100 p-1">
+
+          <button
+            type="button"
+            onClick={() =>
+              handleChangeMode("phone")
+            }
+            className={`rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+              mode === "phone"
+                ? "bg-white text-green-700 shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            ورود با موبایل
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              handleChangeMode("email")
+            }
+            className={`rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+              mode === "email"
+                ? "bg-white text-green-700 shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            ورود با ایمیل
+          </button>
+
+        </div>
+
+        {/* ERROR */}
 
         {error && (
           <div
@@ -311,15 +472,11 @@ sessionStorage.setItem(
         )}
 
         {/* ======================================
-            PHONE
+            PHONE LOGIN
         ====================================== */}
 
         {mode === "phone" && (
           <div className="space-y-5">
-
-            {/* ==================================
-                PHONE INPUT
-            ================================== */}
 
             {!otpSent && (
               <>
@@ -340,7 +497,7 @@ sessionStorage.setItem(
                       const value =
                         event.target.value.replace(
                           /\D/g,
-                          "",
+                          ""
                         );
 
                       setPhone(value);
@@ -351,7 +508,8 @@ sessionStorage.setItem(
                     inputMode="numeric"
                     dir="ltr"
                     maxLength={11}
-                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-left text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-600 focus:ring-2 focus:ring-green-100"
+                    disabled={isLoading}
+                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-left text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-600 focus:ring-2 focus:ring-green-100 disabled:bg-gray-50"
                   />
 
                 </div>
@@ -373,10 +531,6 @@ sessionStorage.setItem(
               </>
             )}
 
-            {/* ==================================
-                OTP
-            ================================== */}
-
             {otpSent && (
               <form
                 onSubmit={
@@ -388,7 +542,7 @@ sessionStorage.setItem(
                 <div className="text-center">
 
                   <p className="text-sm text-gray-500">
-                    کد تأیید به شماره زیر ارسال شد
+                    کد تأیید به شماره زیر ارسال شد:
                   </p>
 
                   <p
@@ -399,8 +553,6 @@ sessionStorage.setItem(
                   </p>
 
                 </div>
-
-                {/* OTP INPUT */}
 
                 <div>
 
@@ -421,7 +573,7 @@ sessionStorage.setItem(
                       const value =
                         event.target.value.replace(
                           /\D/g,
-                          "",
+                          ""
                         );
 
                       setOtp(value);
@@ -431,17 +583,17 @@ sessionStorage.setItem(
                     autoComplete="one-time-code"
                     dir="ltr"
                     autoFocus
-                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-center text-xl font-medium tracking-[0.5em] text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-600 focus:ring-2 focus:ring-green-100"
+                    disabled={isLoading}
+                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-center text-xl font-medium tracking-[0.5em] text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-600 focus:ring-2 focus:ring-green-100 disabled:bg-gray-50"
                   />
 
                 </div>
 
-                {/* VERIFY BUTTON */}
-
                 <button
                   type="submit"
                   disabled={
-                    isLoading
+                    isLoading ||
+                    otp.length !== 6
                   }
                   className="w-full rounded-xl bg-green-700 px-4 py-3 font-medium text-white transition hover:bg-green-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
                 >
@@ -450,16 +602,12 @@ sessionStorage.setItem(
                     : "تأیید و ورود"}
                 </button>
 
-                {/* CHANGE PHONE */}
-
                 <button
                   type="button"
                   onClick={
                     handleChangePhone
                   }
-                  disabled={
-                    isLoading
-                  }
+                  disabled={isLoading}
                   className="w-full text-sm text-gray-500 transition hover:text-green-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   تغییر شماره موبایل
@@ -472,25 +620,109 @@ sessionStorage.setItem(
         )}
 
         {/* ======================================
-            REGISTER
+            EMAIL LOGIN
         ====================================== */}
+
+        {mode === "email" && (
+          <form
+            onSubmit={
+              handleEmailLogin
+            }
+            className="space-y-5"
+          >
+
+            <div>
+
+              <label
+                htmlFor="email"
+                className="mb-2 block text-sm font-medium text-gray-700"
+              >
+                ایمیل
+              </label>
+
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(event) => {
+                  setEmail(
+                    event.target.value
+                  );
+
+                  setError(null);
+                }}
+                placeholder="example@email.com"
+                autoComplete="email"
+                dir="ltr"
+                disabled={isLoading}
+                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-left text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-600 focus:ring-2 focus:ring-green-100 disabled:bg-gray-50"
+              />
+
+            </div>
+
+            <div>
+
+              <label
+                htmlFor="password"
+                className="mb-2 block text-sm font-medium text-gray-700"
+              >
+                رمز عبور
+              </label>
+
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(event) => {
+                  setPassword(
+                    event.target.value
+                  );
+
+                  setError(null);
+                }}
+                placeholder="رمز عبور خود را وارد کنید"
+                autoComplete="current-password"
+                dir="ltr"
+                disabled={isLoading}
+                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-left text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-600 focus:ring-2 focus:ring-green-100 disabled:bg-gray-50"
+              />
+
+            </div>
+
+            <button
+              type="submit"
+              disabled={
+                isLoading
+              }
+              className="w-full rounded-xl bg-green-700 px-4 py-3 font-medium text-white transition hover:bg-green-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isLoading
+                ? "در حال ورود..."
+                : "ورود به حساب"}
+            </button>
+
+          </form>
+        )}
+
+        {/* REGISTER */}
 
         <div className="mt-7 text-center text-sm text-gray-500">
 
           حساب کاربری ندارید؟
 
-          <a
-            href="/register"
+          <button
+            type="button"
+            onClick={() =>
+              router.push("/register")
+            }
             className="mr-1 font-medium text-green-700 transition hover:text-green-800"
           >
             ثبت‌نام کنید
-          </a>
+          </button>
 
         </div>
 
-        {/* ======================================
-            FOOTER
-        ====================================== */}
+        {/* FOOTER */}
 
         <p className="mt-6 text-center text-xs leading-5 text-gray-400">
           با ورود به حساب کاربری، شرایط استفاده از سرویس را می‌پذیرید.
@@ -498,5 +730,28 @@ sessionStorage.setItem(
 
       </div>
     </main>
+  );
+}
+
+// ==========================================
+// PAGE
+// ==========================================
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <main
+          dir="rtl"
+          className="flex min-h-screen items-center justify-center bg-gray-50 px-4"
+        >
+          <div className="text-sm text-gray-500">
+            در حال بارگذاری...
+          </div>
+        </main>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   );
 }

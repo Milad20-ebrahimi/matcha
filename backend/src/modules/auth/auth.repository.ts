@@ -111,7 +111,12 @@ export async function markOtpAsVerified(
     .set({
       verifiedAt: new Date(),
     })
-    .where(eq(otpCodes.id, id))
+    .where(
+      eq(
+        otpCodes.id,
+        id
+      )
+    )
     .returning();
 
   return otp;

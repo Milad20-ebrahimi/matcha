@@ -5,6 +5,8 @@ import {
   requestRegistrationOtp,
   verifyOtp,
   completeRegistration,
+  registerWithEmail,
+  loginWithEmail,
 } from "./auth.service.js";
 import {
   refreshAuthSession,
@@ -273,6 +275,130 @@ export async function requestRegistrationOtpController(
         error instanceof Error
           ? error.message
           : "خطا در درخواست کد ثبت‌نام.",
+    });
+  }
+}
+export async function registerWithEmailController(
+  req: Request,
+  res: Response
+) {
+  try {
+    const {
+      email,
+      password,
+      firstName,
+    } = req.body;
+
+    if (
+      typeof email !== "string" ||
+      !email.trim()
+    ) {
+      return res.status(400).json({
+        message:
+          "ایمیل الزامی است.",
+      });
+    }
+
+    if (
+      typeof password !== "string" ||
+      !password
+    ) {
+      return res.status(400).json({
+        message:
+          "رمز عبور الزامی است.",
+      });
+    }
+
+    if (
+      typeof firstName !== "string" ||
+      !firstName.trim()
+    ) {
+      return res.status(400).json({
+        message:
+          "نام الزامی است.",
+      });
+    }
+
+    const result =
+      await registerWithEmail(
+        email,
+        password,
+        firstName
+      );
+
+    return res.status(201).json({
+      message:
+        "ثبت‌نام با موفقیت انجام شد.",
+      data: result,
+    });
+  } catch (error) {
+    console.error(
+      "Email registration error:",
+      error
+    );
+
+    return res.status(400).json({
+      message:
+        error instanceof Error
+          ? error.message
+          : "خطا در ثبت‌نام.",
+    });
+  }
+}
+
+
+export async function loginWithEmailController(
+  req: Request,
+  res: Response
+) {
+  try {
+    const {
+      email,
+      password,
+    } = req.body;
+
+    if (
+      typeof email !== "string" ||
+      !email.trim()
+    ) {
+      return res.status(400).json({
+        message:
+          "ایمیل الزامی است.",
+      });
+    }
+
+    if (
+      typeof password !== "string" ||
+      !password
+    ) {
+      return res.status(400).json({
+        message:
+          "رمز عبور الزامی است.",
+      });
+    }
+
+    const result =
+      await loginWithEmail(
+        email,
+        password
+      );
+
+    return res.status(200).json({
+      message:
+        "ورود با موفقیت انجام شد.",
+      data: result,
+    });
+  } catch (error) {
+    console.error(
+      "Email login error:",
+      error
+    );
+
+    return res.status(401).json({
+      message:
+        error instanceof Error
+          ? error.message
+          : "ایمیل یا رمز عبور اشتباه است.",
     });
   }
 }

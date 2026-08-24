@@ -10,18 +10,15 @@ import {
 } from "next/navigation";
 
 import {
+  registerWithEmail,
   requestRegistrationOtp,
-  verifyOtp,
-  completeRegistration,
 } from "@/features/auth/api";
 
 import {
   useAuthContext,
 } from "@/features/auth/auth.context";
 
-type RegisterStep =
-  | "details"
-  | "otp";
+type RegisterMode = "phone" | "email";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -30,12 +27,12 @@ export default function RegisterPage() {
     setSession,
   } = useAuthContext();
 
-  const [
-    step,
-    setStep,
-  ] = useState<RegisterStep>(
-    "details"
-  );
+  const [mode, setMode] =
+    useState<RegisterMode>("phone");
+
+  // ==========================================
+  // COMMON
+  // ==========================================
 
   const [
     firstName,
@@ -43,28 +40,9 @@ export default function RegisterPage() {
   ] = useState("");
 
   const [
-    phone,
-    setPhone,
-  ] = useState("");
-
-  const [
-    otp,
-    setOtp,
-  ] = useState("");
-
-  const [
-    otpId,
-    setOtpId,
-  ] = useState<string | null>(
-    null
-  );
-
-  const [
     error,
     setError,
-  ] = useState<string | null>(
-    null
-  );
+  ] = useState<string | null>(null);
 
   const [
     isLoading,
@@ -72,23 +50,64 @@ export default function RegisterPage() {
   ] = useState(false);
 
   // ==========================================
-  // REQUEST OTP
+  // PHONE
   // ==========================================
 
-  async function handleRequestOtp(
+  const [
+    phone,
+    setPhone,
+  ] = useState("");
+
+  // ==========================================
+  // EMAIL
+  // ==========================================
+
+  const [
+    email,
+    setEmail,
+  ] = useState("");
+
+  const [
+    password,
+    setPassword,
+  ] = useState("");
+
+  const [
+    confirmPassword,
+    setConfirmPassword,
+  ] = useState("");
+
+  // ==========================================
+  // CHANGE MODE
+  // ==========================================
+
+  function handleChangeMode(
+    nextMode: RegisterMode
+  ) {
+    setMode(nextMode);
+    setError(null);
+  }
+
+  // ==========================================
+  // PHONE REGISTRATION
+  // ==========================================
+
+  async function handlePhoneRegistration(
     event: FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
 
     setError(null);
 
-    const normalizedName =
+    const normalizedFirstName =
       firstName.trim();
 
     const normalizedPhone =
       phone.trim();
 
-    if (!normalizedName) {
+    // NAME
+
+    if (!normalizedFirstName) {
       setError(
         "لطفاً نام خود را وارد کنید."
       );
@@ -97,7 +116,7 @@ export default function RegisterPage() {
     }
 
     if (
-      normalizedName.length < 2
+      normalizedFirstName.length < 2
     ) {
       setError(
         "نام باید حداقل ۲ کاراکتر باشد."
@@ -105,6 +124,8 @@ export default function RegisterPage() {
 
       return;
     }
+
+    // PHONE
 
     if (!normalizedPhone) {
       setError(
@@ -129,32 +150,55 @@ export default function RegisterPage() {
     try {
       setIsLoading(true);
 
-     const response =
-  await requestRegistrationOtp(
-    normalizedPhone
-  );
+      const response =
+        await requestRegistrationOtp(
+          normalizedPhone
+        );
 
-      setOtpId(
-        response.data.otpId
+      const {
+        otpId,
+        phone: returnedPhone,
+      } = response.data;
+
+      if (!otpId) {
+        throw new Error(
+          "شناسه کد تأیید از سرور دریافت نشد."
+        );
+      }
+
+      // SAVE REGISTRATION DATA
+
+      sessionStorage.setItem(
+        "matcha_registration_otp_id",
+        otpId
       );
 
-      setPhone(
-        response.data.phone
+      sessionStorage.setItem(
+        "matcha_registration_phone",
+        returnedPhone ||
+          normalizedPhone
       );
 
-      setOtp("");
+      sessionStorage.setItem(
+        "matcha_registration_first_name",
+        normalizedFirstName
+      );
 
-      setStep("otp");
+      // GO TO OTP
+
+      router.push(
+        "/verify-otp?mode=register"
+      );
     } catch (error) {
       console.error(
-        "Register request OTP error:",
+        "Phone registration error:",
         error
       );
 
       setError(
         error instanceof Error
           ? error.message
-          : "ارسال کد تأیید ناموفق بود."
+          : "ارسال کد ثبت‌نام ناموفق بود."
       );
     } finally {
       setIsLoading(false);
@@ -162,45 +206,97 @@ export default function RegisterPage() {
   }
 
   // ==========================================
-  // VERIFY OTP + COMPLETE REGISTRATION
+  // EMAIL REGISTRATION
   // ==========================================
 
-  async function handleVerifyOtp(
+  async function handleEmailRegistration(
     event: FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
 
     setError(null);
 
-    const normalizedOtp =
-      otp.trim();
-
-    const normalizedName =
+    const normalizedFirstName =
       firstName.trim();
 
-    if (!otpId) {
+    const normalizedEmail =
+      email.trim().toLowerCase();
+
+    // NAME
+
+    if (!normalizedFirstName) {
       setError(
-        "شناسه کد تأیید پیدا نشد. دوباره درخواست کد کنید."
+        "لطفاً نام خود را وارد کنید."
       );
 
       return;
     }
 
     if (
-      !/^\d{6}$/.test(
-        normalizedOtp
-      )
+      normalizedFirstName.length < 2
     ) {
       setError(
-        "کد تأیید باید ۶ رقم باشد."
+        "نام باید حداقل ۲ کاراکتر باشد."
       );
 
       return;
     }
 
-    if (!normalizedName) {
+    // EMAIL
+
+    if (!normalizedEmail) {
       setError(
-        "نام کاربر الزامی است."
+        "لطفاً ایمیل خود را وارد کنید."
+      );
+
+      return;
+    }
+
+    if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        normalizedEmail
+      )
+    ) {
+      setError(
+        "فرمت ایمیل صحیح نیست."
+      );
+
+      return;
+    }
+
+    // PASSWORD
+
+    if (!password) {
+      setError(
+        "لطفاً رمز عبور خود را وارد کنید."
+      );
+
+      return;
+    }
+
+    if (password.length < 8) {
+      setError(
+        "رمز عبور باید حداقل ۸ کاراکتر باشد."
+      );
+
+      return;
+    }
+
+    // CONFIRM PASSWORD
+
+    if (!confirmPassword) {
+      setError(
+        "لطفاً تکرار رمز عبور را وارد کنید."
+      );
+
+      return;
+    }
+
+    if (
+      password !== confirmPassword
+    ) {
+      setError(
+        "رمز عبور و تکرار آن یکسان نیستند."
       );
 
       return;
@@ -209,122 +305,36 @@ export default function RegisterPage() {
     try {
       setIsLoading(true);
 
-      // ----------------------------------------
-      // STEP 1: VERIFY OTP
-      // ----------------------------------------
-
-      const verifyResponse =
-        await verifyOtp(
-          otpId,
-          normalizedOtp
+      const response =
+        await registerWithEmail(
+          normalizedEmail,
+          password,
+          normalizedFirstName
         );
 
       const {
-        isNewUser,
-        needsName,
         accessToken,
         refreshToken,
-      } = verifyResponse.data;
-
-      /*
-       * اگر به هر دلیلی شماره متعلق به
-       * یک کاربر موجود باشد، ثبت‌نام را
-       * ادامه نمی‌دهیم.
-       */
-      if (
-        !isNewUser &&
-        accessToken &&
-        refreshToken
-      ) {
-        setError(
-          "این شماره موبایل قبلاً ثبت‌نام کرده است. لطفاً از صفحه ورود وارد شوید."
-        );
-
-        return;
-      }
+      } = response.data;
 
       if (
-        !isNewUser ||
-        !needsName
-      ) {
-        setError(
-          "وضعیت ثبت‌نام معتبر نیست."
-        );
-
-        return;
-      }
-
-      // ----------------------------------------
-      // STEP 2: COMPLETE REGISTRATION
-      // ----------------------------------------
-
-      const registrationResponse =
-        await completeRegistration(
-          otpId,
-          normalizedName
-        );
-
-      const {
-        accessToken:
-          registrationAccessToken,
-        refreshToken:
-          registrationRefreshToken,
-      } =
-        registrationResponse.data;
-
-      if (
-        !registrationAccessToken ||
-        !registrationRefreshToken
+        !accessToken ||
+        !refreshToken
       ) {
         throw new Error(
           "توکن ورود بعد از ثبت‌نام دریافت نشد."
         );
       }
 
-      // ----------------------------------------
-      // STEP 3: SAVE SESSION
-      // ----------------------------------------
-
       await setSession({
-        accessToken:
-          registrationAccessToken,
-
-        refreshToken:
-          registrationRefreshToken,
+        accessToken,
+        refreshToken,
       });
-
-      // ----------------------------------------
-      // CLEANUP
-      // ----------------------------------------
-
-      sessionStorage.removeItem(
-        "matcha_pending_otp_id"
-      );
-
-      sessionStorage.removeItem(
-        "matcha_pending_phone"
-      );
-
-      sessionStorage.removeItem(
-        "matcha_otp_id"
-      );
-
-      sessionStorage.removeItem(
-        "matcha_phone"
-      );
-
-      sessionStorage.removeItem(
-        "matcha_otp_expires_at"
-      );
-
-      // ----------------------------------------
-      // REDIRECT
-      // ----------------------------------------
 
       router.replace("/");
     } catch (error) {
       console.error(
-        "Register verification error:",
+        "Email registration error:",
         error
       );
 
@@ -339,20 +349,6 @@ export default function RegisterPage() {
   }
 
   // ==========================================
-  // CHANGE PHONE
-  // ==========================================
-
-  function handleChangePhone() {
-    setStep("details");
-
-    setOtp("");
-
-    setOtpId(null);
-
-    setError(null);
-  }
-
-  // ==========================================
   // UI
   // ==========================================
 
@@ -363,9 +359,7 @@ export default function RegisterPage() {
     >
       <div className="w-full max-w-md rounded-2xl border border-gray-100 bg-white p-6 shadow-sm sm:p-8">
 
-        {/* ======================================
-            BRAND
-        ====================================== */}
+        {/* BRAND */}
 
         <div className="mb-8 text-center">
 
@@ -378,14 +372,46 @@ export default function RegisterPage() {
           </h1>
 
           <p className="mt-2 text-sm leading-6 text-gray-500">
-            برای ساخت حساب کاربری اطلاعات خود را وارد کنید.
+            برای ساخت حساب کاربری یکی از روش‌های زیر را انتخاب کنید.
           </p>
 
         </div>
 
-        {/* ======================================
-            ERROR
-        ====================================== */}
+        {/* MODE SWITCH */}
+
+        <div className="mb-6 grid grid-cols-2 rounded-xl bg-gray-100 p-1">
+
+          <button
+            type="button"
+            onClick={() =>
+              handleChangeMode("phone")
+            }
+            className={`rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+              mode === "phone"
+                ? "bg-white text-green-700 shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            ثبت‌نام با موبایل
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              handleChangeMode("email")
+            }
+            className={`rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+              mode === "email"
+                ? "bg-white text-green-700 shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            ثبت‌نام با ایمیل
+          </button>
+
+        </div>
+
+        {/* ERROR */}
 
         {error && (
           <div
@@ -397,13 +423,13 @@ export default function RegisterPage() {
         )}
 
         {/* ======================================
-            STEP 1
+            PHONE REGISTER
         ====================================== */}
 
-        {step === "details" && (
+        {mode === "phone" && (
           <form
             onSubmit={
-              handleRequestOtp
+              handlePhoneRegistration
             }
             className="space-y-5"
           >
@@ -413,19 +439,17 @@ export default function RegisterPage() {
             <div>
 
               <label
-                htmlFor="firstName"
+                htmlFor="phone-firstName"
                 className="mb-2 block text-sm font-medium text-gray-700"
               >
                 نام
               </label>
 
               <input
-                id="firstName"
+                id="phone-firstName"
                 type="text"
                 value={firstName}
-                onChange={(
-                  event
-                ) => {
+                onChange={(event) => {
                   setFirstName(
                     event.target.value
                   );
@@ -435,7 +459,7 @@ export default function RegisterPage() {
                 placeholder="میلاد"
                 autoComplete="given-name"
                 disabled={isLoading}
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-600 focus:ring-2 focus:ring-green-100"
+                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-600 focus:ring-2 focus:ring-green-100 disabled:cursor-not-allowed disabled:bg-gray-50"
               />
 
             </div>
@@ -445,19 +469,17 @@ export default function RegisterPage() {
             <div>
 
               <label
-                htmlFor="phone"
+                htmlFor="register-phone"
                 className="mb-2 block text-sm font-medium text-gray-700"
               >
                 شماره موبایل
               </label>
 
               <input
-                id="phone"
+                id="register-phone"
                 type="tel"
                 value={phone}
-                onChange={(
-                  event
-                ) => {
+                onChange={(event) => {
                   const value =
                     event.target.value.replace(
                       /\D/g,
@@ -465,7 +487,6 @@ export default function RegisterPage() {
                     );
 
                   setPhone(value);
-
                   setError(null);
                 }}
                 placeholder="09123456789"
@@ -474,18 +495,16 @@ export default function RegisterPage() {
                 dir="ltr"
                 maxLength={11}
                 disabled={isLoading}
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-left text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-600 focus:ring-2 focus:ring-green-100"
+                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-left text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-600 focus:ring-2 focus:ring-green-100 disabled:cursor-not-allowed disabled:bg-gray-50"
               />
 
             </div>
 
-            {/* REQUEST OTP */}
+            {/* BUTTON */}
 
             <button
               type="submit"
-              disabled={
-                isLoading
-              }
+              disabled={isLoading}
               className="w-full rounded-xl bg-green-700 px-4 py-3 font-medium text-white transition hover:bg-green-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isLoading
@@ -497,106 +516,156 @@ export default function RegisterPage() {
         )}
 
         {/* ======================================
-            STEP 2
+            EMAIL REGISTER
         ====================================== */}
 
-        {step === "otp" && (
+        {mode === "email" && (
           <form
             onSubmit={
-              handleVerifyOtp
+              handleEmailRegistration
             }
             className="space-y-5"
           >
 
-            <div className="text-center">
-
-              <p className="text-sm leading-6 text-gray-500">
-                کد تأیید به شماره زیر ارسال شد:
-              </p>
-
-              <p
-                dir="ltr"
-                className="mt-2 font-medium text-gray-900"
-              >
-                {phone}
-              </p>
-
-            </div>
-
-            {/* OTP */}
+            {/* NAME */}
 
             <div>
 
               <label
-                htmlFor="otp"
+                htmlFor="email-firstName"
                 className="mb-2 block text-sm font-medium text-gray-700"
               >
-                کد تأیید
+                نام
               </label>
 
               <input
-                id="otp"
+                id="email-firstName"
                 type="text"
-                inputMode="numeric"
-                maxLength={6}
-                value={otp}
-                onChange={(
-                  event
-                ) => {
-                  const value =
-                    event.target.value.replace(
-                      /\D/g,
-                      ""
-                    );
-
-                  setOtp(value);
+                value={firstName}
+                onChange={(event) => {
+                  setFirstName(
+                    event.target.value
+                  );
 
                   setError(null);
                 }}
-                placeholder="123456"
-                autoComplete="one-time-code"
-                dir="ltr"
-                autoFocus
+                placeholder="میلاد"
+                autoComplete="given-name"
                 disabled={isLoading}
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-center text-xl font-medium tracking-[0.5em] text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-600 focus:ring-2 focus:ring-green-100"
+                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-600 focus:ring-2 focus:ring-green-100 disabled:cursor-not-allowed disabled:bg-gray-50"
               />
 
             </div>
 
-            {/* VERIFY */}
+            {/* EMAIL */}
+
+            <div>
+
+              <label
+                htmlFor="email"
+                className="mb-2 block text-sm font-medium text-gray-700"
+              >
+                ایمیل
+              </label>
+
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(event) => {
+                  setEmail(
+                    event.target.value
+                  );
+
+                  setError(null);
+                }}
+                placeholder="example@email.com"
+                autoComplete="email"
+                dir="ltr"
+                disabled={isLoading}
+                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-left text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-600 focus:ring-2 focus:ring-green-100 disabled:cursor-not-allowed disabled:bg-gray-50"
+              />
+
+            </div>
+
+            {/* PASSWORD */}
+
+            <div>
+
+              <label
+                htmlFor="password"
+                className="mb-2 block text-sm font-medium text-gray-700"
+              >
+                رمز عبور
+              </label>
+
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(event) => {
+                  setPassword(
+                    event.target.value
+                  );
+
+                  setError(null);
+                }}
+                placeholder="حداقل ۸ کاراکتر"
+                autoComplete="new-password"
+                dir="ltr"
+                disabled={isLoading}
+                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-left text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-600 focus:ring-2 focus:ring-green-100 disabled:cursor-not-allowed disabled:bg-gray-50"
+              />
+
+            </div>
+
+            {/* CONFIRM PASSWORD */}
+
+            <div>
+
+              <label
+                htmlFor="confirmPassword"
+                className="mb-2 block text-sm font-medium text-gray-700"
+              >
+                تکرار رمز عبور
+              </label>
+
+              <input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(event) => {
+                  setConfirmPassword(
+                    event.target.value
+                  );
+
+                  setError(null);
+                }}
+                placeholder="رمز عبور را دوباره وارد کنید"
+                autoComplete="new-password"
+                dir="ltr"
+                disabled={isLoading}
+                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-left text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-600 focus:ring-2 focus:ring-green-100 disabled:cursor-not-allowed disabled:bg-gray-50"
+              />
+
+            </div>
+
+            {/* REGISTER BUTTON */}
 
             <button
               type="submit"
-              disabled={
-                isLoading ||
-                otp.length !== 6
-              }
+              disabled={isLoading}
               className="w-full rounded-xl bg-green-700 px-4 py-3 font-medium text-white transition hover:bg-green-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isLoading
                 ? "در حال ثبت‌نام..."
-                : "تأیید و تکمیل ثبت‌نام"}
-            </button>
-
-            {/* CHANGE PHONE */}
-
-            <button
-              type="button"
-              onClick={
-                handleChangePhone
-              }
-              disabled={isLoading}
-              className="w-full text-sm text-gray-500 transition hover:text-green-700 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              تغییر شماره موبایل
+                : "ثبت‌نام"}
             </button>
 
           </form>
         )}
 
-        {/* ======================================
-            LOGIN LINK
-        ====================================== */}
+        {/* LOGIN LINK */}
 
         <div className="mt-7 text-center text-sm text-gray-500">
 

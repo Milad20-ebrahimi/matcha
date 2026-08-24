@@ -81,3 +81,38 @@ export type RefreshResponse = {
 export type LogoutResponse = {
   message: string;
 };
+export type EmailAuthResponse = {
+  message: string;
+
+  data: {
+    success: boolean;
+    user: User;
+
+    accessToken: string;
+    refreshToken: string;
+  };
+};
+
+export type RegisterWithEmailResponse = {
+  message: string;
+
+  data: {
+    success: boolean;
+    user: User;
+
+    accessToken: string;
+    refreshToken: string;
+  };
+};
+
+export type LoginWithEmailResponse = {
+  message: string;
+
+  data: {
+    success: boolean;
+    user: User;
+
+    accessToken: string;
+    refreshToken: string;
+  };
+};

@@ -9,7 +9,7 @@ export function saveSession(
     return;
   }
 
-  sessionStorage.setItem(
+  localStorage.setItem(
     SESSION_KEY,
     JSON.stringify(session)
   );
@@ -23,7 +23,7 @@ export function getSession():
   }
 
   const value =
-    sessionStorage.getItem(
+    localStorage.getItem(
       SESSION_KEY
     );
 
@@ -34,7 +34,7 @@ export function getSession():
   try {
     return JSON.parse(value) as Session;
   } catch {
-    sessionStorage.removeItem(
+    localStorage.removeItem(
       SESSION_KEY
     );
 
@@ -47,7 +47,7 @@ export function clearSession() {
     return;
   }
 
-  sessionStorage.removeItem(
+  localStorage.removeItem(
     SESSION_KEY
   );
 }

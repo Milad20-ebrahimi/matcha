@@ -9,6 +9,8 @@ import type {
   GetMeResponse,
   RefreshResponse,
   LogoutResponse,
+  RegisterWithEmailResponse,
+  LoginWithEmailResponse,
 } from "./types";
 
 export async function requestOtp(
@@ -110,6 +112,39 @@ export async function requestRegistrationOtp(
       method: "POST",
       body: JSON.stringify({
         phone,
+      }),
+    }
+  );
+}
+export async function registerWithEmail(
+  email: string,
+  password: string,
+  firstName: string
+) {
+  return apiRequest<RegisterWithEmailResponse>(
+    "/auth/register-email",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        email,
+        password,
+        firstName,
+      }),
+    }
+  );
+}
+
+export async function loginWithEmail(
+  email: string,
+  password: string
+) {
+  return apiRequest<LoginWithEmailResponse>(
+    "/auth/login-email",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        email,
+        password,
       }),
     }
   );

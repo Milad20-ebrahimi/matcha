@@ -152,3 +152,68 @@ export async function updateUserProfile(
 
   return user;
 }
+export async function updateUserEmailLogin(
+  userId: string
+) {
+  const [user] = await db
+    .update(users)
+    .set({
+      lastLoginAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(
+      eq(
+        users.id,
+        userId
+      )
+    )
+    .returning();
+
+  if (!user) {
+    throw new Error(
+      "User not found."
+    );
+  }
+
+  return user;
+}
+export async function findUserByEmail(
+  email: string
+) {
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+
+  return user;
+}
+
+export async function createEmailUser(
+  data: {
+    roleId: string;
+    email: string;
+    firstName: string;
+    passwordHash: string;
+  }
+) {
+  const [user] = await db
+    .insert(users)
+    .values({
+      roleId: data.roleId,
+      email: data.email,
+      firstName: data.firstName,
+      passwordHash: data.passwordHash,
+      emailVerified: false,
+      phoneVerified: false,
+    })
+    .returning();
+
+  if (!user) {
+    throw new Error(
+      "Failed to create email user."
+    );
+  }
+
+  return user;
+}
