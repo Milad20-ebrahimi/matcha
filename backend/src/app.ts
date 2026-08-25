@@ -6,7 +6,7 @@ import userRoutes from "./modules/users/user.routes.js";
 import addressRoutes from "./modules/addresses/address.routes.js";
 import productRoutes from "./modules/products/product.routes.js";
 import categoryRoutes from "./modules/categories/category.routes.js";
-
+import brandRoutes from "./modules/brands/brand.routes.js";
 const app = express();
 
 const frontendUrl =
@@ -50,5 +50,9 @@ app.use(
 app.use(
   "/api/v1/categories",
   categoryRoutes,
+);
+app.use(
+  "/api/v1/brands",
+  brandRoutes,
 );
 export default app;
