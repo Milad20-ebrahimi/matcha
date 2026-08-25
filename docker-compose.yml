@@ -1,0 +1,71 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: matcha-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: match
+
+    ports:
+      - "5433:5432"
+
+    volumes:
+      - matcha_postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U postgres -d match"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+
+    container_name: matcha-backend
+    restart: unless-stopped
+
+    environment:
+      PORT: 4000
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/match
+      JWT_ACCESS_SECRET: matcha_access_secret_change_this
+      JWT_REFRESH_SECRET: matcha_refresh_secret_change_this
+      FRONTEND_URL: http://localhost:3000
+
+    ports:
+      - "4000:4000"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+
+    container_name: matcha-frontend
+    restart: unless-stopped
+
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4000/api/v1
+
+    ports:
+      - "3000:3000"
+
+    depends_on:
+      - backend
+
+
+volumes:
+  matcha_postgres_data:

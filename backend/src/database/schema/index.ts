@@ -5,3 +5,6 @@ export * from "./otp.schema.js";
 export * from "./refresh-session.schema.js";
 export * from "./address.schema.js";
 export * from "./email-verification.schema.js";
+export * from "./category.schema.js";
+export * from "./product.schema.js";
+export * from "./brand.schema.js";

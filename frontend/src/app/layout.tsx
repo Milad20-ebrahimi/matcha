@@ -3,8 +3,6 @@ import { Vazirmatn } from "next/font/google";
 
 import "./globals.css";
 
-import Navbar from "@/components/shared/Navbar";
-import Footer from "@/components/shared/Footer";
 import { AuthProvider } from "@/features/auth/auth.context";
 
 const vazirmatn = Vazirmatn({
@@ -14,8 +12,10 @@ const vazirmatn = Vazirmatn({
 
 export const metadata: Metadata = {
   title: {
-    default: "MATCH--CAFE | تجربه اصیل ماچا و قهوه",
-    template: "%s | MATCH--CAFE",
+    default:
+      "MATCHA CAFE | تجربه اصیل ماچا و قهوه",
+    template:
+      "%s | MATCHA CAFE",
   },
 
   description:
@@ -42,18 +42,10 @@ export default function RootLayout({
       dir="rtl"
       className={`${vazirmatn.variable} antialiased`}
     >
-      <body className="min-h-screen flex flex-col bg-white text-slate-900">
-
+      <body className="min-h-screen bg-white text-slate-900">
         <AuthProvider>
-
-          <Navbar />
-
-          <main className="flex-1">
-            {children}
-          </main>
-
+          {children}
         </AuthProvider>
-        <Footer/>
       </body>
     </html>
   );
