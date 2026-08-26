@@ -255,114 +255,89 @@ export default function HeroSection() {
         );
       })}
 
-      {/* Contact / Cafe Status */}
-      <div
-        className="
-          absolute
-          right-6
-          top-28
-          z-30
-          hidden
-          w-[230px]
-          flex-col
-          gap-3
-          rounded-2xl
-          border
-          border-white/20
-          bg-white/10
-          p-4
-          shadow-xl
-          backdrop-blur-xl
-          sm:flex
-        "
-      >
+{/* Contact / Cafe Status */}
+<div
+  className="
+    absolute
+    right-4
+    top-24
+    z-30
+    flex
+    w-[160px]
+    flex-col
+    gap-1.5
+    rounded-2xl
+    border
+    border-white/20
+    bg-black/30
+    p-3
+    text-right
+    shadow-lg
+    backdrop-blur-xl
+    sm:right-6
+    sm:top-28
+    sm:w-auto
+  "
+>
+  {/* Status */}
+  <span
+    className="
+      self-center
+      inline-flex
+      items-center
+      gap-2
+      rounded-full
+      border
+      border-emerald-400/30
+      bg-emerald-400/10
+      px-2.5
+      py-1
+      text-[11px]
+      font-medium
+      text-emerald-300
+    "
+  >
+    <span
+      className="
+        h-1.5
+        w-1.5
+        rounded-full
+        bg-emerald-400
+      "
+    />
 
-        {/* Status */}
-        <div
-          className="
-            flex
-            items-center
-            justify-between
-            gap-3
-          "
-        >
+    باز است
+  </span>
 
-          <span
-            className="
-              inline-flex
-              items-center
-              gap-2
-              rounded-full
-              border
-              border-emerald-400/30
-              bg-emerald-400/10
-              px-3
-              py-1
-              text-xs
-              font-medium
-              text-emerald-300
-            "
-          >
-            <span
-              className="
-                h-1.5
-                w-1.5
-                rounded-full
-                bg-emerald-400
-                shadow-[0_0_8px_rgba(52,211,153,0.8)]
-              "
-            />
+  {/* Phone */}
+  <a
+    href={`tel:${cafePhone}`}
+    className="
+      mt-1
+      w-full
+      text-right
+      text-xs
+      text-stone-100
+      transition
+      hover:text-amber-300
+    "
+  >
+    {cafePhone}
+  </a>
 
-            باز است
-          </span>
-
-        </div>
-
-        {/* Divider */}
-        <div className="h-px bg-white/10" />
-
-        {/* Phone */}
-        <a
-          href={`tel:${cafePhone}`}
-          className="
-            flex
-            items-center
-            justify-between
-            gap-3
-            text-xs
-            text-stone-200
-            transition
-            hover:text-amber-300
-          "
-        >
-          <span className="text-white/50">
-            تماس
-          </span>
-
-          <span dir="ltr">
-            {cafePhone}
-          </span>
-        </a>
-
-        {/* Address */}
-        <div
-          className="
-            flex
-            flex-col
-            gap-1
-            text-xs
-          "
-        >
-          <span className="text-white/50">
-            آدرس
-          </span>
-
-          <span className="leading-6 text-stone-300">
-            {cafeAddress}
-          </span>
-        </div>
-
-      </div>
+  {/* Address */}
+  <span
+    className="
+      w-full
+      text-right
+      text-[11px]
+      leading-5
+      text-stone-300
+    "
+  >
+    {cafeAddress}
+  </span>
+</div>
 
       {/* Content */}
       <div

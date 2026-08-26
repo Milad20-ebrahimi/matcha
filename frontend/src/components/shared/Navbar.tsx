@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -27,11 +28,15 @@ const navLinks = [
     href: "/cafe",
   },
   {
+    label: "وبلاگ",
+    href: "/about",
+  },
+  {
     label: "درباره ما",
     href: "/about",
   },
   {
-    label: "تماس با ما",
+    label: "رزرو میز",
     href: "/contact",
   },
 ];
@@ -76,6 +81,11 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
 
   const [shopOpen, setShopOpen] = useState(false);
+  const [mobileShopOpen, setMobileShopOpen] = useState(false);
+  const [mobileCategoryOpen, setMobileCategoryOpen] = useState<string | null>(
+    null
+  );
+
   const [searchOpen, setSearchOpen] = useState(false);
 
   const pathname = usePathname();
@@ -94,6 +104,18 @@ export default function Navbar() {
       window.removeEventListener("scroll", handleScroll);
     };
   }, []);
+
+  const closeMobileMenu = () => {
+    setOpen(false);
+    setMobileShopOpen(false);
+    setMobileCategoryOpen(null);
+  };
+
+  const toggleMobileCategory = (title: string) => {
+    setMobileCategoryOpen((current) =>
+      current === title ? null : title
+    );
+  };
 
   return (
     <header
@@ -215,7 +237,7 @@ export default function Navbar() {
               )}
             </Link>
 
-            {/* Shop + Mega Menu */}
+            {/* Desktop Shop */}
 
             <div
               className="relative"
@@ -268,7 +290,7 @@ export default function Navbar() {
                 )}
               </Link>
 
-              {/* Mega Menu */}
+              {/* Desktop Mega Menu */}
 
               {shopOpen && (
                 <div
@@ -363,7 +385,7 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Other Links */}
+            {/* Other Desktop Links */}
 
             {navLinks.slice(1).map((item) => {
               const isActive =
@@ -371,7 +393,7 @@ export default function Navbar() {
 
               return (
                 <Link
-                  key={item.href}
+                  key={item.label}
                   href={item.href}
                   className={`
                     relative
@@ -412,7 +434,7 @@ export default function Navbar() {
 
           <div className="flex items-center gap-3">
 
-            {/* Search */}
+            {/* Desktop Search */}
 
             <button
               type="button"
@@ -442,7 +464,7 @@ export default function Navbar() {
               )}
             </button>
 
-            {/* Account */}
+            {/* Desktop Account */}
 
             <Link
               href="/login"
@@ -511,13 +533,41 @@ export default function Navbar() {
               )}
             </Link>
 
-            {/* Mobile menu button */}
+            {/* Mobile Account */}
+
+            <Link
+              href="/login"
+              aria-label="ورود"
+              className="
+                flex
+                h-11
+                w-11
+                items-center
+                justify-center
+                rounded-full
+                bg-[#d97706]
+                text-white
+                shadow-lg
+                transition
+                hover:scale-110
+                md:hidden
+              "
+            >
+              <User size={18} />
+            </Link>
+
+            {/* Mobile Menu */}
 
             <button
               type="button"
-              onClick={() =>
-                setOpen((value) => !value)
-              }
+              onClick={() => {
+                setOpen((value) => !value);
+
+                if (open) {
+                  setMobileShopOpen(false);
+                  setMobileCategoryOpen(null);
+                }
+              }}
               aria-label={
                 open
                   ? "بستن منو"
@@ -605,15 +655,288 @@ export default function Navbar() {
               md:hidden
             "
           >
-            {navLinks.map((item) => {
+
+            {/* Home */}
+
+            <Link
+              href="/"
+              onClick={closeMobileMenu}
+              className={`
+                block
+                rounded-2xl
+                px-4
+                py-3
+                text-sm
+                font-semibold
+                transition
+                ${
+                  pathname === "/"
+                    ? "bg-[#f8f5ed] text-[#d97706]"
+                    : "text-[#355e3b] hover:bg-[#f8f5ed]"
+                }
+              `}
+            >
+              خانه
+            </Link>
+
+            {/* Shop Accordion */}
+
+            <div className="mt-1">
+
+              {/* Shop Header */}
+
+              <div
+                className={`
+                  flex
+                  items-center
+                  rounded-2xl
+                  transition
+                  ${
+                    pathname.startsWith("/shop")
+                      ? "bg-[#f8f5ed]"
+                      : "hover:bg-[#f8f5ed]"
+                  }
+                `}
+              >
+                <Link
+                  href="/shop"
+                  onClick={closeMobileMenu}
+                  className={`
+                    flex-1
+                    px-4
+                    py-3
+                    text-sm
+                    font-semibold
+                    ${
+                      pathname.startsWith("/shop")
+                        ? "text-[#d97706]"
+                        : "text-[#355e3b]"
+                    }
+                  `}
+                >
+                  فروشگاه
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setMobileShopOpen(
+                      (value) => !value
+                    )
+                  }
+                  aria-expanded={mobileShopOpen}
+                  aria-label={
+                    mobileShopOpen
+                      ? "بستن فروشگاه"
+                      : "باز کردن فروشگاه"
+                  }
+                  className="
+                    flex
+                    h-11
+                    w-11
+                    items-center
+                    justify-center
+                    text-[#355e3b]
+                  "
+                >
+                  <ChevronDown
+                    size={18}
+                    className={`
+                      transition-transform
+                      duration-300
+                      ${
+                        mobileShopOpen
+                          ? "rotate-180"
+                          : ""
+                      }
+                    `}
+                  />
+                </button>
+              </div>
+
+              {/* Shop Categories */}
+
+              <div
+                className={`
+                  grid
+                  transition-all
+                  duration-300
+                  ${
+                    mobileShopOpen
+                      ? "grid-rows-[1fr] opacity-100"
+                      : "grid-rows-[0fr] opacity-0"
+                  }
+                `}
+              >
+                <div className="min-h-0 overflow-hidden">
+
+                  <div
+                    className="
+                      mr-4
+                      mt-2
+                      border-r
+                      border-[#355e3b]/10
+                      pr-3
+                    "
+                  >
+
+                    {shopCategories.map(
+                      (category) => {
+                        const isOpen =
+                          mobileCategoryOpen ===
+                          category.title;
+
+                        return (
+                          <div
+                            key={category.title}
+                            className="mb-1"
+                          >
+
+                            {/* Category Header */}
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                toggleMobileCategory(
+                                  category.title
+                                )
+                              }
+                              aria-expanded={isOpen}
+                              className="
+                                flex
+                                w-full
+                                items-center
+                                justify-between
+                                rounded-xl
+                                px-3
+                                py-2.5
+                                text-right
+                                text-sm
+                                font-semibold
+                                text-[#355e3b]
+                                transition
+                                hover:bg-[#f8f5ed]
+                              "
+                            >
+                              <span>
+                                {category.title}
+                              </span>
+
+                              <ChevronDown
+                                size={16}
+                                className={`
+                                  transition-transform
+                                  duration-300
+                                  ${
+                                    isOpen
+                                      ? "rotate-180 text-[#d97706]"
+                                      : ""
+                                  }
+                                `}
+                              />
+                            </button>
+
+                            {/* Category Items */}
+
+                            <div
+                              className={`
+                                grid
+                                transition-all
+                                duration-300
+                                ${
+                                  isOpen
+                                    ? "grid-rows-[1fr] opacity-100"
+                                    : "grid-rows-[0fr] opacity-0"
+                                }
+                              `}
+                            >
+                              <div className="min-h-0 overflow-hidden">
+
+                                <div className="mr-3 space-y-1 border-r border-[#d97706]/10 pr-3">
+
+                                  {category.items.map(
+                                    (item) => (
+                                      <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        onClick={
+                                          closeMobileMenu
+                                        }
+                                        className="
+                                          block
+                                          rounded-lg
+                                          px-3
+                                          py-2
+                                          text-xs
+                                          text-slate-500
+                                          transition
+                                          hover:bg-[#f8f5ed]
+                                          hover:text-[#d97706]
+                                        "
+                                      >
+                                        {item.label}
+                                      </Link>
+                                    )
+                                  )}
+
+                                </div>
+
+                              </div>
+                            </div>
+
+                          </div>
+                        );
+                      }
+                    )}
+
+                    {/* All Products */}
+
+                    <Link
+                      href="/shop"
+                      onClick={closeMobileMenu}
+                      className="
+                        mt-2
+                        flex
+                        items-center
+                        justify-between
+                        rounded-xl
+                        bg-[#f8f5ed]
+                        px-3
+                        py-3
+                        text-xs
+                        font-bold
+                        text-[#355e3b]
+                        transition
+                        hover:text-[#d97706]
+                      "
+                    >
+                      <span>
+                        مشاهده همه محصولات
+                      </span>
+
+                      <span>
+                        ←
+                      </span>
+                    </Link>
+
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+
+            {/* Other Mobile Links */}
+
+            {navLinks.slice(1).map((item) => {
               const isActive =
                 pathname === item.href;
 
               return (
                 <Link
-                  key={item.href}
+                  key={item.label}
                   href={item.href}
-                  onClick={() => setOpen(false)}
+                  onClick={closeMobileMenu}
                   className={`
                     block
                     rounded-2xl
@@ -660,6 +983,7 @@ export default function Navbar() {
               <Search size={18} />
               جستجو
             </button>
+
           </div>
         )}
       </Container>
