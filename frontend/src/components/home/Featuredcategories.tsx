@@ -25,8 +25,7 @@ const categories = [
 
 export default function FeaturedCategories() {
   return (
-    <section className="py-20">
-
+    <section className="pt-20 pb-8">
       <Container>
 
         <SectionTitle

@@ -13,8 +13,6 @@ export default function ShopHomePage() {
 
       <FeaturesSection />
 
-      <FeaturedCategories />
-
       <FeaturedProducts />
 
       <CafeSection />

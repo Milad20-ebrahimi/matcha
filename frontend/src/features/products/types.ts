@@ -15,6 +15,7 @@ export type Product = {
   id: string;
   name: string;
   slug: string;
+
   description: string | null;
   price: number;
   stock: number;
@@ -22,8 +23,12 @@ export type Product = {
   isActive: boolean;
 
   category: ProductCategory | null;
-
   brand: ProductBrand | null;
+
+  // اطلاعات نمایشی کارت
+  oldPrice?: number;
+  rating?: number;
+  badge?: string;
 };
 
 export type GetProductsParams = {
@@ -41,4 +46,4 @@ export type ProductsResponse = {
 export type ProductResponse = {
   success: boolean;
   data: Product;
-};  
+};
