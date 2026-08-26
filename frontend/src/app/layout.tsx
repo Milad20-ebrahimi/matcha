@@ -4,6 +4,7 @@ import { Vazirmatn } from "next/font/google";
 import "./globals.css";
 
 import { AuthProvider } from "@/features/auth/auth.context";
+import { CartProvider } from "@/features/cart/cart.context";
 
 const vazirmatn = Vazirmatn({
   subsets: ["arabic"],
@@ -42,11 +43,13 @@ export default function RootLayout({
       dir="rtl"
       className={`${vazirmatn.variable} antialiased`}
     >
-      <body className="min-h-screen bg-white text-slate-900">
-        <AuthProvider>
-          {children}
-        </AuthProvider>
-      </body>
+     <body className="min-h-screen bg-white text-slate-900">
+  <AuthProvider>
+    <CartProvider>
+      {children}
+    </CartProvider>
+  </AuthProvider>
+</body>
     </html>
   );
 }

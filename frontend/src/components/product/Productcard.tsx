@@ -1,8 +1,14 @@
+"use client";
+
 import Link from "next/link";
 
 import type {
   Product,
 } from "@/features/products/types";
+
+import {
+  useCart,
+} from "@/features/cart/cart.context";
 
 import Card from "@/components/ui/card";
 import Button from "@/components/ui/button";
@@ -14,6 +20,24 @@ interface ProductCardProps {
 export default function ProductCard({
   product,
 }: ProductCardProps) {
+  const {
+    addToCart,
+  } = useCart();
+
+  const isOutOfStock =
+    product.stock <= 0;
+
+  function handleAddToCart() {
+    if (isOutOfStock) {
+      return;
+    }
+
+    addToCart(
+      product.id,
+      1,
+    );
+  }
+
   return (
     <Card>
       <Link
@@ -50,13 +74,23 @@ export default function ProductCard({
           </span>
 
           <span className="text-sm text-slate-500">
-            موجودی: {product.stock.toLocaleString("fa-IR")}
+            موجودی:{" "}
+            {product.stock.toLocaleString(
+              "fa-IR",
+            )}
           </span>
         </div>
       </Link>
 
-      <Button className="mt-5 w-full">
-        افزودن به سبد
+      <Button
+        type="button"
+        disabled={isOutOfStock}
+        onClick={handleAddToCart}
+        className="mt-5 w-full"
+      >
+        {isOutOfStock
+          ? "ناموجود"
+          : "افزودن به سبد"}
       </Button>
     </Card>
   );

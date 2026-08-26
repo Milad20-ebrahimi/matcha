@@ -8,3 +8,4 @@ export * from "./email-verification.schema.js";
 export * from "./category.schema.js";
 export * from "./product.schema.js";
 export * from "./brand.schema.js";
+export * from "./cart.schema.js";

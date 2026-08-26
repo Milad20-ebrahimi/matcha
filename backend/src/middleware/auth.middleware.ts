@@ -31,6 +31,7 @@ export function requireAuth(
       typeof authorization !== "string"
     ) {
       return res.status(401).json({
+        success: false,
         message:
           "احراز هویت الزامی است.",
       });
@@ -42,16 +43,20 @@ export function requireAuth(
       )
     ) {
       return res.status(401).json({
+        success: false,
         message:
           "فرمت Authorization نامعتبر است.",
       });
     }
 
     const token =
-      authorization.substring(7).trim();
+      authorization
+        .substring(7)
+        .trim();
 
     if (!token) {
       return res.status(401).json({
+        success: false,
         message:
           "Access Token ارسال نشده است.",
       });
@@ -71,6 +76,7 @@ export function requireAuth(
       typeof decoded.roleId !== "string"
     ) {
       return res.status(401).json({
+        success: false,
         message:
           "Access Token نامعتبر است.",
       });
@@ -86,6 +92,7 @@ export function requireAuth(
     next();
   } catch {
     return res.status(401).json({
+      success: false,
       message:
         "Access Token نامعتبر یا منقضی شده است.",
     });

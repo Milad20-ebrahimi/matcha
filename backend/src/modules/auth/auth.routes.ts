@@ -54,6 +54,7 @@ router.post(
   "/login-email",
   loginWithEmailController
 );
+
 router.post(
   "/request-email-verification",
   requestEmailVerificationController

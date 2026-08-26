@@ -15,17 +15,13 @@ export function saveSession(
   );
 }
 
-export function getSession():
-  | Session
-  | null {
+export function getSession(): Session | null {
   if (typeof window === "undefined") {
     return null;
   }
 
   const value =
-    localStorage.getItem(
-      SESSION_KEY
-    );
+    localStorage.getItem(SESSION_KEY);
 
   if (!value) {
     return null;

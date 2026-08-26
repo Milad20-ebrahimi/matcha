@@ -1,8 +1,13 @@
+"use client";
+
 import Link from "next/link";
 
 import Container from "./Container";
 import Button from "../ui/button";
 
+import {
+  useCart,
+} from "@/features/cart/cart.context";
 
 const navLinks = [
   {
@@ -10,7 +15,7 @@ const navLinks = [
     href: "/",
   },
   {
-    label: "منو کافه",
+    label: "منوی کافه",
     href: "/cafe",
   },
   {
@@ -27,8 +32,11 @@ const navLinks = [
   },
 ];
 
-
 export default function Navbar() {
+  const {
+    itemCount,
+  } = useCart();
+
   return (
     <header className="border-b border-slate-100 bg-white">
       <Container>
@@ -39,9 +47,8 @@ export default function Navbar() {
             href="/"
             className="text-xl font-bold tracking-wide text-slate-900"
           >
-            MATCH--CAFE
+            MATCHA CAFE
           </Link>
-
 
           {/* Desktop Navigation */}
           <div className="hidden items-center gap-8 md:flex">
@@ -61,21 +68,24 @@ export default function Navbar() {
             ))}
           </div>
 
-
           {/* Actions */}
           <div className="flex items-center gap-3">
 
-            <Button
-              variant="outline"
-              className="hidden md:inline-flex"
-            >
-              ورود
-            </Button>
+            {/* Login */}
+            <Link href="/login">
+              <Button
+                variant="outline"
+                className="hidden md:inline-flex"
+              >
+                ورود
+              </Button>
+            </Link>
 
-
+            {/* Cart */}
             <Link
               href="/cart"
               className="
+                relative
                 rounded-full
                 bg-slate-900
                 px-5
@@ -87,12 +97,32 @@ export default function Navbar() {
               "
             >
               سبد خرید
+
+              {itemCount > 0 && (
+                <span
+                  className="
+                    absolute
+                    -right-2
+                    -top-2
+                    flex
+                    h-6
+                    min-w-6
+                    items-center
+                    justify-center
+                    rounded-full
+                    bg-green-700
+                    px-1.5
+                    text-xs
+                    font-bold
+                    text-white
+                  "
+                >
+                  {itemCount.toLocaleString("fa-IR")}
+                </span>
+              )}
             </Link>
 
-
           </div>
-
-
         </nav>
       </Container>
     </header>
