@@ -11,9 +11,7 @@ import {
   type ReactNode,
 } from "react";
 
-import {
-  useAuthContext,
-} from "@/features/auth/auth.context";
+import { useAuthContext } from "@/features/auth/auth.context";
 
 import {
   getCart,
@@ -100,7 +98,7 @@ export function CartProvider({
 
   /*
    * جلوگیری از Merge شدن چندباره
-   * Guest Cart هنگام تغییر وضعیت احراز هویت
+   * Guest Cart هنگام Login
    */
   const hasMergedGuestCart =
     useRef(false);
@@ -135,6 +133,9 @@ export function CartProvider({
       clearGuestCart();
     }, []);
 
+  /*
+   * دریافت سبد خرید
+   */
   const loadCart =
     useCallback(async () => {
       if (authLoading) {
@@ -145,10 +146,12 @@ export function CartProvider({
       setError(null);
 
       try {
+        /*
+         * کاربر وارد شده
+         */
         if (isAuthenticated) {
           /*
-           * بعد از Login/Register:
-           * ابتدا Guest Cart را به Backend منتقل می‌کنیم.
+           * ابتدا Guest Cart را منتقل می‌کنیم.
            */
           if (
             !hasMergedGuestCart.current
@@ -160,7 +163,8 @@ export function CartProvider({
           }
 
           /*
-           * سپس Cart واقعی کاربر را از Backend می‌گیریم.
+           * سپس Cart واقعی کاربر را
+           * از Backend دریافت می‌کنیم.
            */
           const response =
             await getCart();
@@ -182,7 +186,7 @@ export function CartProvider({
           );
 
           /*
-           * اگر Logout شد، اجازه می‌دهیم
+           * در Logout اجازه می‌دهیم
            * در Login بعدی دوباره Merge انجام شود.
            */
           hasMergedGuestCart.current =
@@ -201,12 +205,16 @@ export function CartProvider({
         );
 
         /*
-         * اگر Merge شکست خورد،
-         * Guest Cart را پاک نمی‌کنیم.
+         * اگر کاربر Login است،
+         * Cart خالی نمایش داده می‌شود.
          */
         if (isAuthenticated) {
           setCart(emptyCart);
         } else {
+          /*
+           * اگر Guest است،
+           * اطلاعات localStorage حفظ می‌شود.
+           */
           setCart(
             guestItemsToCart(
               getGuestCart().items,
@@ -222,14 +230,22 @@ export function CartProvider({
       mergeGuestCart,
     ]);
 
+  /*
+   * هر زمان وضعیت Auth تغییر کرد،
+   * Cart را دوباره Load می‌کنیم.
+   */
   useEffect(() => {
-    loadCart();
+    void loadCart();
   }, [loadCart]);
 
   /*
    * ذخیره Guest Cart در localStorage
    */
   useEffect(() => {
+    /*
+     * Cart کاربر Login شده
+     * نباید در localStorage ذخیره شود.
+     */
     if (
       isAuthenticated ||
       cart.id
@@ -245,20 +261,26 @@ export function CartProvider({
     isAuthenticated,
   ]);
 
+  /*
+   * افزودن محصول به سبد خرید
+   */
   const addToCart =
     useCallback(
       async (
         productId: string,
         quantity = 1,
       ) => {
-        if (quantity <= 0) {
+        if (
+          !Number.isInteger(quantity) ||
+          quantity <= 0
+        ) {
           return;
         }
 
         setError(null);
 
         /*
-         * کاربر لاگین شده
+         * کاربر Login شده
          */
         if (isAuthenticated) {
           try {
@@ -289,54 +311,72 @@ export function CartProvider({
         /*
          * Guest Cart
          */
-        setCart((currentCart) => {
-          const existingItem =
-            currentCart.items.find(
-              (item) =>
-                item.productId ===
-                productId,
-            );
+        setCart(
+          (currentCart) => {
+            const existingItem =
+              currentCart.items.find(
+                (item) =>
+                  item.productId ===
+                  productId,
+              );
 
-          if (existingItem) {
+            /*
+             * اگر محصول قبلاً وجود دارد،
+             * تعداد آن را افزایش می‌دهیم.
+             */
+            if (existingItem) {
+              return {
+                ...currentCart,
+
+                items:
+                  currentCart.items.map(
+                    (item) =>
+                      item.productId ===
+                      productId
+                        ? {
+                            ...item,
+                            quantity:
+                              item.quantity +
+                              quantity,
+                          }
+                        : item,
+                  ),
+              };
+            }
+
+            /*
+             * محصول جدید
+             */
             return {
               ...currentCart,
-              items:
-                currentCart.items.map(
-                  (item) =>
-                    item.productId ===
-                    productId
-                      ? {
-                          ...item,
-                          quantity:
-                            item.quantity +
-                            quantity,
-                        }
-                      : item,
-                ),
-            };
-          }
 
-          return {
-            ...currentCart,
-            items: [
-              ...currentCart.items,
-              {
-                id: `guest-${productId}`,
-                productId,
-                quantity,
-                product: {
-                  id: productId,
-                  name: "",
-                  slug: "",
-                  price: 0,
-                  stock: 0,
-                  image: null,
-                  isActive: true,
+              items: [
+                ...currentCart.items,
+                {
+                  id: `guest-${productId}`,
+
+                  productId,
+
+                  quantity,
+
+                  /*
+                   * اطلاعات محصول واقعی
+                   * بعداً در صفحه Cart دریافت می‌شود.
+                   */
+                  product: {
+                    id: productId,
+                    name: "",
+                    slug: "",
+                    price: 0,
+                    stock: 0,
+                    image: null,
+                    isActive: true,
+                  },
                 },
-              },
-            ],
-          };
-        });
+              ],
+            };
+          },
+        );
       },
       [
         isAuthenticated,
@@ -344,6 +384,9 @@ export function CartProvider({
       ],
     );
 
+  /*
+   * حذف محصول از سبد خرید
+   */
   const removeFromCart =
     useCallback(
       async (
@@ -352,7 +395,7 @@ export function CartProvider({
         setError(null);
 
         /*
-         * Logged-in Cart
+         * Cart کاربر Login شده
          */
         if (isAuthenticated) {
           try {
@@ -382,15 +425,18 @@ export function CartProvider({
         /*
          * Guest Cart
          */
-        setCart((currentCart) => ({
-          ...currentCart,
-          items:
-            currentCart.items.filter(
-              (item) =>
-                item.productId !==
-                productId,
-            ),
-        }));
+        setCart(
+          (currentCart) => ({
+            ...currentCart,
+
+            items:
+              currentCart.items.filter(
+                (item) =>
+                  item.productId !==
+                  productId,
+              ),
+          }),
+        );
       },
       [
         isAuthenticated,
@@ -398,12 +444,19 @@ export function CartProvider({
       ],
     );
 
+  /*
+   * تغییر تعداد محصول
+   */
   const updateQuantity =
     useCallback(
       async (
         productId: string,
         quantity: number,
       ) => {
+        /*
+         * اگر تعداد به صفر برسد،
+         * محصول حذف می‌شود.
+         */
         if (quantity <= 0) {
           await removeFromCart(
             productId,
@@ -412,10 +465,16 @@ export function CartProvider({
           return;
         }
 
+        if (
+          !Number.isInteger(quantity)
+        ) {
+          return;
+        }
+
         setError(null);
 
         /*
-         * Logged-in Cart
+         * Cart کاربر Login شده
          */
         if (isAuthenticated) {
           try {
@@ -446,20 +505,23 @@ export function CartProvider({
         /*
          * Guest Cart
          */
-        setCart((currentCart) => ({
-          ...currentCart,
-          items:
-            currentCart.items.map(
-              (item) =>
-                item.productId ===
-                productId
-                  ? {
-                      ...item,
-                      quantity,
-                    }
-                  : item,
-            ),
-        }));
+        setCart(
+          (currentCart) => ({
+            ...currentCart,
+
+            items:
+              currentCart.items.map(
+                (item) =>
+                  item.productId ===
+                  productId
+                    ? {
+                        ...item,
+                        quantity,
+                      }
+                    : item,
+              ),
+          }),
+        );
       },
       [
         isAuthenticated,
@@ -468,12 +530,15 @@ export function CartProvider({
       ],
     );
 
+  /*
+   * خالی کردن کامل سبد خرید
+   */
   const clearCart =
     useCallback(async () => {
       setError(null);
 
       /*
-       * Logged-in Cart
+       * Cart کاربر Login شده
        */
       if (isAuthenticated) {
         try {
@@ -509,6 +574,9 @@ export function CartProvider({
       loadCart,
     ]);
 
+  /*
+   * تعداد کل محصولات
+   */
   const itemCount =
     useMemo(
       () =>
@@ -524,6 +592,9 @@ export function CartProvider({
       [cart.items],
     );
 
+  /*
+   * مقدار Context
+   */
   const value =
     useMemo(
       () => ({
@@ -531,11 +602,14 @@ export function CartProvider({
         itemCount,
         isLoading,
         error,
+
         addToCart,
         removeFromCart,
         updateQuantity,
         clearCart,
-        refreshCart: loadCart,
+
+        refreshCart:
+          loadCart,
       }),
       [
         cart,
@@ -559,6 +633,9 @@ export function CartProvider({
   );
 }
 
+/*
+ * Hook استفاده از Cart
+ */
 export function useCart() {
   const context =
     useContext(

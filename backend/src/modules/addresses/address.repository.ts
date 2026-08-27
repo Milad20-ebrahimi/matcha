@@ -8,7 +8,7 @@ import { db } from "../../database/index.js";
 import { addresses } from "../../database/schema/address.schema.js";
 
 export async function findAddressesByUserId(
-  userId: string
+  userId: string,
 ) {
   return db
     .select()
@@ -16,18 +16,18 @@ export async function findAddressesByUserId(
     .where(
       eq(
         addresses.userId,
-        userId
-      )
+        userId,
+      ),
     )
     .orderBy(
       desc(addresses.isDefault),
-      desc(addresses.createdAt)
+      desc(addresses.createdAt),
     );
 }
 
 export async function findAddressById(
   addressId: string,
-  userId: string
+  userId: string,
 ) {
   const [address] =
     await db
@@ -37,13 +37,13 @@ export async function findAddressById(
         and(
           eq(
             addresses.id,
-            addressId
+            addressId,
           ),
           eq(
             addresses.userId,
-            userId
-          )
-        )
+            userId,
+          ),
+        ),
       )
       .limit(1);
 
@@ -65,7 +65,7 @@ export async function createAddress(
     latitude?: string | null;
     longitude?: string | null;
     isDefault?: boolean;
-  }
+  },
 ) {
   const [newAddress] =
     await db
@@ -100,7 +100,7 @@ export async function createAddress(
 
   if (!newAddress) {
     throw new Error(
-      "Failed to create address."
+      "Failed to create address.",
     );
   }
 
@@ -122,7 +122,7 @@ export async function updateAddress(
     unit?: string | null;
     latitude?: string | null;
     longitude?: string | null;
-  }
+  },
 ) {
   const [updatedAddress] =
     await db
@@ -136,19 +136,19 @@ export async function updateAddress(
         and(
           eq(
             addresses.id,
-            addressId
+            addressId,
           ),
           eq(
             addresses.userId,
-            userId
-          )
-        )
+            userId,
+          ),
+        ),
       )
       .returning();
 
   if (!updatedAddress) {
     throw new Error(
-      "Address not found."
+      "Address not found.",
     );
   }
 
@@ -157,7 +157,7 @@ export async function updateAddress(
 
 export async function deleteAddress(
   addressId: string,
-  userId: string
+  userId: string,
 ) {
   const [deletedAddress] =
     await db
@@ -166,19 +166,19 @@ export async function deleteAddress(
         and(
           eq(
             addresses.id,
-            addressId
+            addressId,
           ),
           eq(
             addresses.userId,
-            userId
-          )
-        )
+            userId,
+          ),
+        ),
       )
       .returning();
 
   if (!deletedAddress) {
     throw new Error(
-      "Address not found."
+      "Address not found.",
     );
   }
 
@@ -186,7 +186,7 @@ export async function deleteAddress(
 }
 
 export async function clearDefaultAddresses(
-  userId: string
+  userId: string,
 ) {
   await db
     .update(addresses)
@@ -198,17 +198,17 @@ export async function clearDefaultAddresses(
     .where(
       eq(
         addresses.userId,
-        userId
-      )
+        userId,
+      ),
     );
 }
 
 export async function setAddressAsDefault(
   addressId: string,
-  userId: string
+  userId: string,
 ) {
   await clearDefaultAddresses(
-    userId
+    userId,
   );
 
   const [address] =
@@ -223,19 +223,19 @@ export async function setAddressAsDefault(
         and(
           eq(
             addresses.id,
-            addressId
+            addressId,
           ),
           eq(
             addresses.userId,
-            userId
-          )
-        )
+            userId,
+          ),
+        ),
       )
       .returning();
 
   if (!address) {
     throw new Error(
-      "Address not found."
+      "Address not found.",
     );
   }
 

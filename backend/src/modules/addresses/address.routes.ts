@@ -1,6 +1,4 @@
-import {
-  Router,
-} from "express";
+import { Router } from "express";
 
 import {
   requireAuth,
@@ -14,37 +12,41 @@ import {
   setDefaultAddressController,
 } from "./address.controller.js";
 
-const router =
-  Router();
+const router = Router();
 
+// GET /api/v1/addresses
 router.get(
   "/",
   requireAuth,
-  getAddressesController
+  getAddressesController,
 );
 
+// POST /api/v1/addresses
 router.post(
   "/",
   requireAuth,
-  createAddressController
+  createAddressController,
 );
 
+// PATCH /api/v1/addresses/:id
 router.patch(
   "/:id",
   requireAuth,
-  updateAddressController
+  updateAddressController,
 );
 
+// DELETE /api/v1/addresses/:id
 router.delete(
   "/:id",
   requireAuth,
-  deleteAddressController
+  deleteAddressController,
 );
 
+// PATCH /api/v1/addresses/:id/default
 router.patch(
   "/:id/default",
   requireAuth,
-  setDefaultAddressController
+  setDefaultAddressController,
 );
 
 export default router;

@@ -49,19 +49,28 @@ export const users = pgTable("users", {
     .default(false)
     .notNull(),
 
-  lastLoginAt: timestamp("last_login_at", {
-    withTimezone: true,
-  }),
+  lastLoginAt: timestamp(
+    "last_login_at",
+    {
+      withTimezone: true,
+    },
+  ),
 
-  createdAt: timestamp("created_at", {
-    withTimezone: true,
-  })
+  createdAt: timestamp(
+    "created_at",
+    {
+      withTimezone: true,
+    },
+  )
     .defaultNow()
     .notNull(),
 
-  updatedAt: timestamp("updated_at", {
-    withTimezone: true,
-  })
+  updatedAt: timestamp(
+    "updated_at",
+    {
+      withTimezone: true,
+    },
+  )
     .defaultNow()
     .notNull(),
 });

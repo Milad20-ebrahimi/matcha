@@ -3,6 +3,10 @@ import type {
   Response,
 } from "express";
 
+import type {
+  AuthenticatedRequest,
+} from "../../middleware/auth.middleware.js";
+
 import {
   getUserAddresses,
   createUserAddress,
@@ -12,9 +16,11 @@ import {
 } from "./address.service.js";
 
 function getUserId(
-  req: Request
+  req: Request,
 ) {
-  return (req as any).user?.userId;
+  return (
+    req as AuthenticatedRequest
+  ).user?.userId;
 }
 
 /**
@@ -22,7 +28,7 @@ function getUserId(
  */
 export async function getAddressesController(
   req: Request,
-  res: Response
+  res: Response,
 ) {
   try {
     const userId =
@@ -30,6 +36,7 @@ export async function getAddressesController(
 
     if (!userId) {
       return res.status(401).json({
+        success: false,
         message:
           "کاربر احراز هویت نشده است.",
       });
@@ -37,10 +44,11 @@ export async function getAddressesController(
 
     const addresses =
       await getUserAddresses(
-        userId
+        userId,
       );
 
     return res.status(200).json({
+      success: true,
       message:
         "آدرس‌های کاربر دریافت شد.",
       data: addresses,
@@ -48,12 +56,15 @@ export async function getAddressesController(
   } catch (error) {
     console.error(
       "Get addresses error:",
-      error
+      error,
     );
 
     return res.status(500).json({
+      success: false,
       message:
-        "خطا در دریافت آدرس‌ها.",
+        error instanceof Error
+          ? error.message
+          : "خطا در دریافت آدرس‌ها.",
     });
   }
 }
@@ -63,7 +74,7 @@ export async function getAddressesController(
  */
 export async function createAddressController(
   req: Request,
-  res: Response
+  res: Response,
 ) {
   try {
     const userId =
@@ -71,6 +82,7 @@ export async function createAddressController(
 
     if (!userId) {
       return res.status(401).json({
+        success: false,
         message:
           "کاربر احراز هویت نشده است.",
       });
@@ -79,10 +91,11 @@ export async function createAddressController(
     const address =
       await createUserAddress(
         userId,
-        req.body
+        req.body,
       );
 
     return res.status(201).json({
+      success: true,
       message:
         "آدرس با موفقیت ایجاد شد.",
       data: address,
@@ -90,7 +103,7 @@ export async function createAddressController(
   } catch (error) {
     console.error(
       "Create address error:",
-      error
+      error,
     );
 
     const message =
@@ -99,6 +112,7 @@ export async function createAddressController(
         : "خطا در ایجاد آدرس.";
 
     return res.status(400).json({
+      success: false,
       message,
     });
   }
@@ -109,7 +123,7 @@ export async function createAddressController(
  */
 export async function updateAddressController(
   req: Request,
-  res: Response
+  res: Response,
 ) {
   try {
     const userId =
@@ -117,6 +131,7 @@ export async function updateAddressController(
 
     if (!userId) {
       return res.status(401).json({
+        success: false,
         message:
           "کاربر احراز هویت نشده است.",
       });
@@ -127,9 +142,11 @@ export async function updateAddressController(
 
     if (
       typeof addressId !==
-      "string"
+        "string" ||
+      !addressId.trim()
     ) {
       return res.status(400).json({
+        success: false,
         message:
           "شناسه آدرس نامعتبر است.",
       });
@@ -139,10 +156,11 @@ export async function updateAddressController(
       await updateUserAddress(
         userId,
         addressId,
-        req.body
+        req.body,
       );
 
     return res.status(200).json({
+      success: true,
       message:
         "آدرس با موفقیت بروزرسانی شد.",
       data: address,
@@ -150,7 +168,7 @@ export async function updateAddressController(
   } catch (error) {
     console.error(
       "Update address error:",
-      error
+      error,
     );
 
     const message =
@@ -159,6 +177,7 @@ export async function updateAddressController(
         : "خطا در بروزرسانی آدرس.";
 
     return res.status(400).json({
+      success: false,
       message,
     });
   }
@@ -169,7 +188,7 @@ export async function updateAddressController(
  */
 export async function deleteAddressController(
   req: Request,
-  res: Response
+  res: Response,
 ) {
   try {
     const userId =
@@ -177,6 +196,7 @@ export async function deleteAddressController(
 
     if (!userId) {
       return res.status(401).json({
+        success: false,
         message:
           "کاربر احراز هویت نشده است.",
       });
@@ -187,9 +207,11 @@ export async function deleteAddressController(
 
     if (
       typeof addressId !==
-      "string"
+        "string" ||
+      !addressId.trim()
     ) {
       return res.status(400).json({
+        success: false,
         message:
           "شناسه آدرس نامعتبر است.",
       });
@@ -197,17 +219,18 @@ export async function deleteAddressController(
 
     await deleteUserAddress(
       userId,
-      addressId
+      addressId,
     );
 
     return res.status(200).json({
+      success: true,
       message:
         "آدرس با موفقیت حذف شد.",
     });
   } catch (error) {
     console.error(
       "Delete address error:",
-      error
+      error,
     );
 
     const message =
@@ -216,6 +239,7 @@ export async function deleteAddressController(
         : "خطا در حذف آدرس.";
 
     return res.status(400).json({
+      success: false,
       message,
     });
   }
@@ -226,7 +250,7 @@ export async function deleteAddressController(
  */
 export async function setDefaultAddressController(
   req: Request,
-  res: Response
+  res: Response,
 ) {
   try {
     const userId =
@@ -234,6 +258,7 @@ export async function setDefaultAddressController(
 
     if (!userId) {
       return res.status(401).json({
+        success: false,
         message:
           "کاربر احراز هویت نشده است.",
       });
@@ -244,9 +269,11 @@ export async function setDefaultAddressController(
 
     if (
       typeof addressId !==
-      "string"
+        "string" ||
+      !addressId.trim()
     ) {
       return res.status(400).json({
+        success: false,
         message:
           "شناسه آدرس نامعتبر است.",
       });
@@ -255,10 +282,11 @@ export async function setDefaultAddressController(
     const address =
       await setDefaultUserAddress(
         userId,
-        addressId
+        addressId,
       );
 
     return res.status(200).json({
+      success: true,
       message:
         "آدرس پیش‌فرض با موفقیت تغییر کرد.",
       data: address,
@@ -266,7 +294,7 @@ export async function setDefaultAddressController(
   } catch (error) {
     console.error(
       "Set default address error:",
-      error
+      error,
     );
 
     const message =
@@ -275,6 +303,7 @@ export async function setDefaultAddressController(
         : "خطا در تغییر آدرس پیش‌فرض.";
 
     return res.status(400).json({
+      success: false,
       message,
     });
   }

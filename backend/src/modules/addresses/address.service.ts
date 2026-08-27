@@ -39,31 +39,31 @@ type UpdateAddressInput = {
 
 function validateRequiredString(
   value: unknown,
-  fieldName: string
+  fieldName: string,
 ) {
   if (
     typeof value !== "string" ||
     !value.trim()
   ) {
     throw new Error(
-      `${fieldName} الزامی است.`
+      `${fieldName} الزامی است.`,
     );
   }
 }
 
 function validatePhone(
-  phone: string
+  phone: string,
 ) {
   const normalized =
     phone.trim();
 
   if (
     !/^09\d{9}$/.test(
-      normalized
+      normalized,
     )
   ) {
     throw new Error(
-      "شماره موبایل گیرنده معتبر نیست."
+      "شماره موبایل گیرنده معتبر نیست.",
     );
   }
 
@@ -71,18 +71,18 @@ function validatePhone(
 }
 
 function validatePostalCode(
-  postalCode: string
+  postalCode: string,
 ) {
   const normalized =
     postalCode.trim();
 
   if (
     !/^\d{10}$/.test(
-      normalized
+      normalized,
     )
   ) {
     throw new Error(
-      "کد پستی باید ۱۰ رقم باشد."
+      "کد پستی باید ۱۰ رقم باشد.",
     );
   }
 
@@ -90,56 +90,58 @@ function validatePostalCode(
 }
 
 export async function getUserAddresses(
-  userId: string
+  userId: string,
 ) {
   return findAddressesByUserId(
-    userId
+    userId,
   );
 }
 
 export async function createUserAddress(
   userId: string,
-  data: CreateAddressInput
+  data: CreateAddressInput,
 ) {
   validateRequiredString(
     data.title,
-    "عنوان آدرس"
+    "عنوان آدرس",
   );
 
   validateRequiredString(
     data.recipientName,
-    "نام گیرنده"
+    "نام گیرنده",
   );
 
   validateRequiredString(
     data.province,
-    "استان"
+    "استان",
   );
 
   validateRequiredString(
     data.city,
-    "شهر"
+    "شهر",
   );
 
   validateRequiredString(
     data.address,
-    "آدرس"
+    "آدرس",
   );
 
   const recipientPhone =
     validatePhone(
-      data.recipientPhone
+      data.recipientPhone,
     );
 
   const postalCode =
     validatePostalCode(
-      data.postalCode
+      data.postalCode,
     );
-if (data.isDefault) {
-  await clearDefaultAddresses(
-    userId
-  );
-}
+
+  if (data.isDefault) {
+    await clearDefaultAddresses(
+      userId,
+    );
+  }
+
   return createAddress({
     userId,
 
@@ -184,17 +186,17 @@ if (data.isDefault) {
 export async function updateUserAddress(
   userId: string,
   addressId: string,
-  data: UpdateAddressInput
+  data: UpdateAddressInput,
 ) {
   const existingAddress =
     await findAddressById(
       addressId,
-      userId
+      userId,
     );
 
   if (!existingAddress) {
     throw new Error(
-      "آدرس پیدا نشد."
+      "آدرس پیدا نشد.",
     );
   }
 
@@ -203,7 +205,7 @@ export async function updateUserAddress(
   ) {
     validateRequiredString(
       data.title,
-      "عنوان آدرس"
+      "عنوان آدرس",
     );
   }
 
@@ -213,7 +215,7 @@ export async function updateUserAddress(
   ) {
     validateRequiredString(
       data.recipientName,
-      "نام گیرنده"
+      "نام گیرنده",
     );
   }
 
@@ -222,7 +224,7 @@ export async function updateUserAddress(
   ) {
     validateRequiredString(
       data.province,
-      "استان"
+      "استان",
     );
   }
 
@@ -231,7 +233,7 @@ export async function updateUserAddress(
   ) {
     validateRequiredString(
       data.city,
-      "شهر"
+      "شهر",
     );
   }
 
@@ -240,7 +242,7 @@ export async function updateUserAddress(
   ) {
     validateRequiredString(
       data.address,
-      "آدرس"
+      "آدرس",
     );
   }
 
@@ -248,7 +250,7 @@ export async function updateUserAddress(
     data.recipientPhone !==
     undefined
       ? validatePhone(
-          data.recipientPhone
+          data.recipientPhone,
         )
       : undefined;
 
@@ -256,7 +258,7 @@ export async function updateUserAddress(
     data.postalCode !==
     undefined
       ? validatePostalCode(
-          data.postalCode
+          data.postalCode,
         )
       : undefined;
 
@@ -351,50 +353,50 @@ export async function updateUserAddress(
               data.longitude,
           }
         : {}),
-    }
+    },
   );
 }
 
 export async function deleteUserAddress(
   userId: string,
-  addressId: string
+  addressId: string,
 ) {
   const existingAddress =
     await findAddressById(
       addressId,
-      userId
+      userId,
     );
 
   if (!existingAddress) {
     throw new Error(
-      "آدرس پیدا نشد."
+      "آدرس پیدا نشد.",
     );
   }
 
   return deleteAddress(
     addressId,
-    userId
+    userId,
   );
 }
 
 export async function setDefaultUserAddress(
   userId: string,
-  addressId: string
+  addressId: string,
 ) {
   const existingAddress =
     await findAddressById(
       addressId,
-      userId
+      userId,
     );
 
   if (!existingAddress) {
     throw new Error(
-      "آدرس پیدا نشد."
+      "آدرس پیدا نشد.",
     );
   }
 
   return setAddressAsDefault(
     addressId,
-    userId
+    userId,
   );
 }
