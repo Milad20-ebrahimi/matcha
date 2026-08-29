@@ -1,10 +1,10 @@
-import HeroSection from "@/components/home/Herosection";
+﻿import HeroSection from "@/components/home/Herosection";
 import FeaturesSection from "@/components/home/Featuressection";
-import FeaturedCategories from "@/components/home/Featuredcategories";
 import FeaturedProducts from "@/components/home/Featuredproducts";
+import FeaturedCategories from "@/components/home/Featuredcategories";
 import CafeMenuPreview from "@/components/home/CafeMenuPreview";
-import CafeSection from "@/components/home/Cafesection";
-import ReviewsSection from "@/components/home/Reviewssection";
+import AboutSection from "@/components/home/AboutSection";
+import GallerySection from "@/components/home/GallerySection";
 
 export default function ShopHomePage() {
   return (
@@ -19,9 +19,9 @@ export default function ShopHomePage() {
 
       <CafeMenuPreview />
 
-      <CafeSection />
+      <AboutSection />
 
-      <ReviewsSection />
+      <GallerySection />
     </>
   );
 }
