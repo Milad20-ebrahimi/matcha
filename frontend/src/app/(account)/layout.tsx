@@ -3,7 +3,6 @@
 import type { ReactNode } from "react";
 
 import { ProfileProvider } from "@/features/profile/profile.context";
-import { AddressProvider } from "@/features/addresses/address.context";
 
 type AccountLayoutProps = {
   children: ReactNode;
@@ -14,9 +13,7 @@ export default function AccountLayout({
 }: AccountLayoutProps) {
   return (
     <ProfileProvider>
-      <AddressProvider>
-        {children}
-      </AddressProvider>
+      {children}
     </ProfileProvider>
   );
 }

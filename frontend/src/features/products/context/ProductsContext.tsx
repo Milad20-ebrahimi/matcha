@@ -8,9 +8,7 @@ import {
   type ReactNode,
 } from "react";
 
-import type {
-  Product,
-} from "@/features/products/types";
+import type { Product } from "@/features/products/types";
 
 import {
   fetchProducts,
@@ -26,9 +24,9 @@ interface ProductsContextType {
 }
 
 const ProductsContext =
-  createContext<
-    ProductsContextType | undefined
-  >(undefined);
+  createContext<ProductsContextType | undefined>(
+    undefined
+  );
 
 export function ProductsProvider({
   children,

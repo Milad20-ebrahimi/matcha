@@ -35,6 +35,7 @@ export async function createOrderController(
 
     const {
       shippingAddress,
+      paymentMethod,
     } = req.body ?? {};
 
     if (
@@ -48,11 +49,22 @@ export async function createOrderController(
       });
     }
 
+    if (
+      paymentMethod !== "ONLINE" &&
+      paymentMethod !== "CASH"
+    ) {
+      return res.status(400).json({
+        message:
+          "روش پرداخت نامعتبر است.",
+      });
+    }
+
     const result =
       await createUserOrder(
         userId,
         {
           shippingAddress,
+          paymentMethod,
         },
       );
 

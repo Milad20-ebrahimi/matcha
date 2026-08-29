@@ -5,6 +5,7 @@ import {
 import {
   cartItems,
   products,
+  payments,
 } from "../../database/schema/index.js";
 
 import {
@@ -22,7 +23,16 @@ import {
 
 type CreateOrderInput = {
   shippingAddress: string;
+  paymentMethod: "ONLINE" | "CASH";
 };
+
+type Transaction = Parameters<
+  typeof db.transaction
+>[0] extends (
+  tx: infer T,
+) => unknown
+  ? T
+  : never;
 
 export async function createUserOrder(
   userId: string,
@@ -35,6 +45,15 @@ export async function createUserOrder(
   ) {
     throw new Error(
       "آدرس ارسال الزامی است.",
+    );
+  }
+
+  if (
+    data.paymentMethod !== "ONLINE" &&
+    data.paymentMethod !== "CASH"
+  ) {
+    throw new Error(
+      "روش پرداخت نامعتبر است.",
     );
   }
 
@@ -128,6 +147,12 @@ export async function createUserOrder(
           };
         });
 
+      if (totalAmount <= 0) {
+        throw new Error(
+          "مبلغ سفارش نامعتبر است.",
+        );
+      }
+
       const order =
         await createOrder(
           tx,
@@ -156,6 +181,25 @@ export async function createUserOrder(
         ),
       );
 
+      const [
+        payment,
+      ] = await tx
+        .insert(payments)
+        .values({
+          orderId: order.id,
+          amount: totalAmount,
+          method:
+            data.paymentMethod,
+          status: "PENDING",
+        })
+        .returning();
+
+      if (!payment) {
+        throw new Error(
+          "خطا در ایجاد پرداخت.",
+        );
+      }
+
       await tx
         .delete(cartItems)
         .where(
@@ -167,6 +211,7 @@ export async function createUserOrder(
 
       return {
         order,
+        payment,
         items:
           orderItemsData,
       };

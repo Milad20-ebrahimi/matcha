@@ -46,13 +46,13 @@ export default function RootLayout({
     >
       <body className="min-h-screen bg-white text-slate-900">
         <AuthProvider>
-          <CartProvider>
-            <AddressProvider>
+          <AddressProvider>
+            <CartProvider>
               <ProductsProvider>
                 {children}
               </ProductsProvider>
-            </AddressProvider>
-          </CartProvider>
+            </CartProvider>
+          </AddressProvider>
         </AuthProvider>
       </body>
     </html>

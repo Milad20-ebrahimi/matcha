@@ -9,6 +9,7 @@ import categoryRoutes from "./modules/categories/category.routes.js";
 import brandRoutes from "./modules/brands/brand.routes.js";
 import cartRoutes from "./modules/cart/cart.routes.js";
 import orderRoutes from "./modules/orders/order.routes.js";
+import paymentRoutes from "./modules/payments/payment.routes.js";
 const app = express();
 
 const frontendUrl =
@@ -64,5 +65,9 @@ app.use(
 app.use(
   "/api/v1/orders",
   orderRoutes,
+);
+app.use(
+  "/api/v1/payments",
+  paymentRoutes,
 );
 export default app;
