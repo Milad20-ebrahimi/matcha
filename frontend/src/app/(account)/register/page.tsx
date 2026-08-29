@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -5,9 +6,8 @@ import {
   useState,
 } from "react";
 
-import {
-  useRouter,
-} from "next/navigation";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import {
   registerWithEmail,
@@ -18,64 +18,38 @@ import {
   useAuthContext,
 } from "@/features/auth/auth.context";
 
+import Container from "@/components/shared/Container";
+
 type RegisterMode = "phone" | "email";
 
 export default function RegisterPage() {
   const router = useRouter();
 
-  const {
-    setSession,
-  } = useAuthContext();
+  const { setSession } = useAuthContext();
 
   const [mode, setMode] =
     useState<RegisterMode>("phone");
 
-  // ==========================================
-  // COMMON
-  // ==========================================
+  const [firstName, setFirstName] =
+    useState("");
 
-  const [
-    firstName,
-    setFirstName,
-  ] = useState("");
+  const [error, setError] =
+    useState<string | null>(null);
 
-  const [
-    error,
-    setError,
-  ] = useState<string | null>(null);
+  const [isLoading, setIsLoading] =
+    useState(false);
 
-  const [
-    isLoading,
-    setIsLoading,
-  ] = useState(false);
+  const [phone, setPhone] =
+    useState("");
 
-  // ==========================================
-  // PHONE
-  // ==========================================
+  const [email, setEmail] =
+    useState("");
 
-  const [
-    phone,
-    setPhone,
-  ] = useState("");
+  const [password, setPassword] =
+    useState("");
 
-  // ==========================================
-  // EMAIL
-  // ==========================================
-
-  const [
-    email,
-    setEmail,
-  ] = useState("");
-
-  const [
-    password,
-    setPassword,
-  ] = useState("");
-
-  const [
-    confirmPassword,
-    setConfirmPassword,
-  ] = useState("");
+  const [confirmPassword, setConfirmPassword] =
+    useState("");
 
   // ==========================================
   // CHANGE MODE
@@ -105,45 +79,31 @@ export default function RegisterPage() {
     const normalizedPhone =
       phone.trim();
 
-    // NAME
-
     if (!normalizedFirstName) {
       setError(
         "لطفاً نام خود را وارد کنید."
       );
-
       return;
     }
 
-    if (
-      normalizedFirstName.length < 2
-    ) {
+    if (normalizedFirstName.length < 2) {
       setError(
         "نام باید حداقل ۲ کاراکتر باشد."
       );
-
       return;
     }
-
-    // PHONE
 
     if (!normalizedPhone) {
       setError(
         "لطفاً شماره موبایل خود را وارد کنید."
       );
-
       return;
     }
 
-    if (
-      !/^09\d{9}$/.test(
-        normalizedPhone
-      )
-    ) {
+    if (!/^09\d{9}$/.test(normalizedPhone)) {
       setError(
         "شماره موبایل معتبر نیست."
       );
-
       return;
     }
 
@@ -166,8 +126,6 @@ export default function RegisterPage() {
         );
       }
 
-      // SAVE REGISTRATION DATA
-
       sessionStorage.setItem(
         "matcha_registration_otp_id",
         otpId
@@ -183,8 +141,6 @@ export default function RegisterPage() {
         "matcha_registration_first_name",
         normalizedFirstName
       );
-
-      // GO TO OTP
 
       router.push(
         "/verify-otp?mode=register"
@@ -222,33 +178,24 @@ export default function RegisterPage() {
     const normalizedEmail =
       email.trim().toLowerCase();
 
-    // NAME
-
     if (!normalizedFirstName) {
       setError(
         "لطفاً نام خود را وارد کنید."
       );
-
       return;
     }
 
-    if (
-      normalizedFirstName.length < 2
-    ) {
+    if (normalizedFirstName.length < 2) {
       setError(
         "نام باید حداقل ۲ کاراکتر باشد."
       );
-
       return;
     }
-
-    // EMAIL
 
     if (!normalizedEmail) {
       setError(
         "لطفاً ایمیل خود را وارد کنید."
       );
-
       return;
     }
 
@@ -260,17 +207,13 @@ export default function RegisterPage() {
       setError(
         "فرمت ایمیل صحیح نیست."
       );
-
       return;
     }
-
-    // PASSWORD
 
     if (!password) {
       setError(
         "لطفاً رمز عبور خود را وارد کنید."
       );
-
       return;
     }
 
@@ -278,27 +221,20 @@ export default function RegisterPage() {
       setError(
         "رمز عبور باید حداقل ۸ کاراکتر باشد."
       );
-
       return;
     }
-
-    // CONFIRM PASSWORD
 
     if (!confirmPassword) {
       setError(
         "لطفاً تکرار رمز عبور را وارد کنید."
       );
-
       return;
     }
 
-    if (
-      password !== confirmPassword
-    ) {
+    if (password !== confirmPassword) {
       setError(
         "رمز عبور و تکرار آن یکسان نیستند."
       );
-
       return;
     }
 
@@ -355,341 +291,619 @@ export default function RegisterPage() {
   return (
     <main
       dir="rtl"
-      className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8"
+      className="
+        relative
+        flex
+        min-h-screen
+        items-center
+        overflow-hidden
+        bg-[#f8f5ed]
+        py-4
+        sm:py-5
+      "
     >
-      <div className="w-full max-w-md rounded-2xl border border-gray-100 bg-white p-6 shadow-sm sm:p-8">
+      {/* TOP RIGHT GLOW */}
 
-        {/* BRAND */}
+      <div
+        className="
+          pointer-events-none
+          absolute
+          -right-32
+          -top-32
+          h-96
+          w-96
+          rounded-full
+          bg-[#b9d19a]/30
+          blur-3xl
+        "
+      />
 
-        <div className="mb-8 text-center">
+      {/* BOTTOM LEFT GLOW */}
 
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-green-700 text-2xl font-bold text-white">
-            M
+      <div
+        className="
+          pointer-events-none
+          absolute
+          -bottom-40
+          -left-32
+          h-96
+          w-96
+          rounded-full
+          bg-[#355e3b]/10
+          blur-3xl
+        "
+      />
+
+      <Container>
+        <div
+          className="
+            relative
+            z-10
+            mx-auto
+            w-full
+            max-w-md
+          "
+        >
+          {/* HEADER */}
+
+          <div className="mb-5 text-center">
+
+            <h1
+              className="
+                mt-2
+                text-3xl
+                font-light
+                text-[#0d1a12]
+                sm:text-4xl
+              "
+            >
+              ثبت‌نام
+            </h1>
+
+            <p
+              className="
+                mt-2
+                text-sm
+                leading-6
+                text-[#0d1a12]/60
+              "
+            >
+              حساب خود را بسازید و تجربه‌ی
+              متفاوت MATCH را شروع کنید.
+            </p>
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
-            ثبت‌نام در Matcha Cafe
-          </h1>
+          {/* CARD */}
 
-          <p className="mt-2 text-sm leading-6 text-gray-500">
-            برای ساخت حساب کاربری یکی از روش‌های زیر را انتخاب کنید.
-          </p>
-
-        </div>
-
-        {/* MODE SWITCH */}
-
-        <div className="mb-6 grid grid-cols-2 rounded-xl bg-gray-100 p-1">
-
-          <button
-            type="button"
-            onClick={() =>
-              handleChangeMode("phone")
-            }
-            className={`rounded-lg px-3 py-2.5 text-sm font-medium transition ${
-              mode === "phone"
-                ? "bg-white text-green-700 shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            ثبت‌نام با موبایل
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              handleChangeMode("email")
-            }
-            className={`rounded-lg px-3 py-2.5 text-sm font-medium transition ${
-              mode === "email"
-                ? "bg-white text-green-700 shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            ثبت‌نام با ایمیل
-          </button>
-
-        </div>
-
-        {/* ERROR */}
-
-        {error && (
           <div
-            role="alert"
-            className="mb-5 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm leading-6 text-red-600"
+            className="
+              rounded-[32px]
+              border
+              border-[#b9d19a]/40
+              bg-white/70
+              p-5
+              shadow-[0_30px_80px_-40px_rgba(13,26,18,0.35)]
+              backdrop-blur-xl
+              sm:p-6
+            "
           >
-            {error}
-          </div>
-        )}
+            {/* MODE SWITCH */}
 
-        {/* ======================================
-            PHONE REGISTER
-        ====================================== */}
-
-        {mode === "phone" && (
-          <form
-            onSubmit={
-              handlePhoneRegistration
-            }
-            className="space-y-5"
-          >
-
-            {/* NAME */}
-
-            <div>
-
-              <label
-                htmlFor="phone-firstName"
-                className="mb-2 block text-sm font-medium text-gray-700"
+            <div
+              className="
+                mb-4
+                grid
+                grid-cols-2
+                rounded-2xl
+                bg-[#f1eee5]
+                p-1
+              "
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  handleChangeMode("phone")
+                }
+                className={`
+                  rounded-xl
+                  px-3
+                  py-2.5
+                  text-sm
+                  font-medium
+                  transition
+                  ${
+                    mode === "phone"
+                      ? "bg-white text-[#355e3b] shadow-sm"
+                      : "text-[#0d1a12]/50 hover:text-[#0d1a12]"
+                  }
+                `}
               >
-                نام
-              </label>
+                ثبت‌نام با موبایل
+              </button>
 
-              <input
-                id="phone-firstName"
-                type="text"
-                value={firstName}
-                onChange={(event) => {
-                  setFirstName(
-                    event.target.value
-                  );
-
-                  setError(null);
-                }}
-                placeholder="میلاد"
-                autoComplete="given-name"
-                disabled={isLoading}
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-600 focus:ring-2 focus:ring-green-100 disabled:cursor-not-allowed disabled:bg-gray-50"
-              />
-
+              <button
+                type="button"
+                onClick={() =>
+                  handleChangeMode("email")
+                }
+                className={`
+                  rounded-xl
+                  px-3
+                  py-2.5
+                  text-sm
+                  font-medium
+                  transition
+                  ${
+                    mode === "email"
+                      ? "bg-white text-[#355e3b] shadow-sm"
+                      : "text-[#0d1a12]/50 hover:text-[#0d1a12]"
+                  }
+                `}
+              >
+                ثبت‌نام با ایمیل
+              </button>
             </div>
+
+            {/* ERROR */}
+
+            {error && (
+              <div
+                role="alert"
+                className="
+                  mb-4
+                  rounded-2xl
+                  border
+                  border-red-100
+                  bg-red-50
+                  px-4
+                  py-2.5
+                  text-center
+                  text-sm
+                  leading-6
+                  text-red-600
+                "
+              >
+                {error}
+              </div>
+            )}
 
             {/* PHONE */}
 
-            <div>
-
-              <label
-                htmlFor="register-phone"
-                className="mb-2 block text-sm font-medium text-gray-700"
+            {mode === "phone" && (
+              <form
+                onSubmit={
+                  handlePhoneRegistration
+                }
+                className="space-y-4"
               >
-                شماره موبایل
-              </label>
+                {/* NAME */}
 
-              <input
-                id="register-phone"
-                type="tel"
-                value={phone}
-                onChange={(event) => {
-                  const value =
-                    event.target.value.replace(
-                      /\D/g,
-                      ""
-                    );
+                <div>
+                  <label
+                    htmlFor="phone-firstName"
+                    className="
+                      mb-2
+                      block
+                      text-sm
+                      font-medium
+                      text-[#0d1a12]/75
+                    "
+                  >
+                    نام
+                  </label>
 
-                  setPhone(value);
-                  setError(null);
-                }}
-                placeholder="09123456789"
-                autoComplete="tel"
-                inputMode="numeric"
-                dir="ltr"
-                maxLength={11}
-                disabled={isLoading}
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-left text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-600 focus:ring-2 focus:ring-green-100 disabled:cursor-not-allowed disabled:bg-gray-50"
-              />
+                  <input
+                    id="phone-firstName"
+                    type="text"
+                    value={firstName}
+                    onChange={(event) => {
+                      setFirstName(
+                        event.target.value
+                      );
+                      setError(null);
+                    }}
+                    placeholder="مثلاً میلاد"
+                    autoComplete="given-name"
+                    disabled={isLoading}
+                    className="
+                      w-full
+                      rounded-2xl
+                      border
+                      border-[#0d1a12]/10
+                      bg-white/80
+                      px-4
+                      py-3
+                      text-sm
+                      text-[#0d1a12]
+                      outline-none
+                      transition
+                      placeholder:text-[#0d1a12]/30
+                      focus:border-[#b9d19a]
+                      focus:ring-4
+                      focus:ring-[#b9d19a]/20
+                      disabled:cursor-not-allowed
+                      disabled:opacity-60
+                    "
+                  />
+                </div>
 
-            </div>
+                {/* PHONE */}
 
-            {/* BUTTON */}
+                <div>
+                  <label
+                    htmlFor="register-phone"
+                    className="
+                      mb-2
+                      block
+                      text-sm
+                      font-medium
+                      text-[#0d1a12]/75
+                    "
+                  >
+                    شماره موبایل
+                  </label>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full rounded-xl bg-green-700 px-4 py-3 font-medium text-white transition hover:bg-green-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isLoading
-                ? "در حال ارسال کد..."
-                : "دریافت کد تأیید"}
-            </button>
+                  <input
+                    id="register-phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(event) => {
+                      const value =
+                        event.target.value.replace(
+                          /\D/g,
+                          ""
+                        );
 
-          </form>
-        )}
+                      setPhone(value);
+                      setError(null);
+                    }}
+                    placeholder="09123456789"
+                    autoComplete="tel"
+                    inputMode="numeric"
+                    dir="ltr"
+                    maxLength={11}
+                    disabled={isLoading}
+                    className="
+                      w-full
+                      rounded-2xl
+                      border
+                      border-[#0d1a12]/10
+                      bg-white/80
+                      px-4
+                      py-3
+                      text-left
+                      text-sm
+                      text-[#0d1a12]
+                      outline-none
+                      transition
+                      placeholder:text-[#0d1a12]/30
+                      focus:border-[#b9d19a]
+                      focus:ring-4
+                      focus:ring-[#b9d19a]/20
+                      disabled:cursor-not-allowed
+                      disabled:opacity-60
+                    "
+                  />
+                </div>
 
-        {/* ======================================
-            EMAIL REGISTER
-        ====================================== */}
-
-        {mode === "email" && (
-          <form
-            onSubmit={
-              handleEmailRegistration
-            }
-            className="space-y-5"
-          >
-
-            {/* NAME */}
-
-            <div>
-
-              <label
-                htmlFor="email-firstName"
-                className="mb-2 block text-sm font-medium text-gray-700"
-              >
-                نام
-              </label>
-
-              <input
-                id="email-firstName"
-                type="text"
-                value={firstName}
-                onChange={(event) => {
-                  setFirstName(
-                    event.target.value
-                  );
-
-                  setError(null);
-                }}
-                placeholder="میلاد"
-                autoComplete="given-name"
-                disabled={isLoading}
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-600 focus:ring-2 focus:ring-green-100 disabled:cursor-not-allowed disabled:bg-gray-50"
-              />
-
-            </div>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="
+                    mt-1
+                    w-full
+                    rounded-full
+                    bg-[#0d1a12]
+                    py-3
+                    text-sm
+                    font-medium
+                    text-[#f2e9d8]
+                    transition-all
+                    duration-500
+                    hover:bg-[#355e3b]
+                    hover:shadow-[0_15px_35px_-15px_rgba(13,26,18,0.5)]
+                    disabled:cursor-not-allowed
+                    disabled:opacity-50
+                  "
+                >
+                  {isLoading
+                    ? "در حال ارسال کد..."
+                    : "دریافت کد تأیید"}
+                </button>
+              </form>
+            )}
 
             {/* EMAIL */}
 
-            <div>
-
-              <label
-                htmlFor="email"
-                className="mb-2 block text-sm font-medium text-gray-700"
+            {mode === "email" && (
+              <form
+                onSubmit={
+                  handleEmailRegistration
+                }
+                className="space-y-3.5"
               >
-                ایمیل
-              </label>
+                {/* NAME */}
 
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(event) => {
-                  setEmail(
-                    event.target.value
-                  );
+                <div>
+                  <label
+                    htmlFor="email-firstName"
+                    className="
+                      mb-1.5
+                      block
+                      text-sm
+                      font-medium
+                      text-[#0d1a12]/75
+                    "
+                  >
+                    نام
+                  </label>
 
-                  setError(null);
-                }}
-                placeholder="example@email.com"
-                autoComplete="email"
-                dir="ltr"
-                disabled={isLoading}
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-left text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-600 focus:ring-2 focus:ring-green-100 disabled:cursor-not-allowed disabled:bg-gray-50"
-              />
+                  <input
+                    id="email-firstName"
+                    type="text"
+                    value={firstName}
+                    onChange={(event) => {
+                      setFirstName(
+                        event.target.value
+                      );
+                      setError(null);
+                    }}
+                    placeholder="مثلاً میلاد"
+                    autoComplete="given-name"
+                    disabled={isLoading}
+                    className="
+                      w-full
+                      rounded-2xl
+                      border
+                      border-[#0d1a12]/10
+                      bg-white/80
+                      px-4
+                      py-2.5
+                      text-sm
+                      text-[#0d1a12]
+                      outline-none
+                      transition
+                      placeholder:text-[#0d1a12]/30
+                      focus:border-[#b9d19a]
+                      focus:ring-4
+                      focus:ring-[#b9d19a]/20
+                      disabled:cursor-not-allowed
+                      disabled:opacity-60
+                    "
+                  />
+                </div>
 
-            </div>
+                {/* EMAIL */}
 
-            {/* PASSWORD */}
+                <div>
+                  <label
+                    htmlFor="register-email"
+                    className="
+                      mb-1.5
+                      block
+                      text-sm
+                      font-medium
+                      text-[#0d1a12]/75
+                    "
+                  >
+                    ایمیل
+                  </label>
 
-            <div>
+                  <input
+                    id="register-email"
+                    type="email"
+                    value={email}
+                    onChange={(event) => {
+                      setEmail(
+                        event.target.value
+                      );
+                      setError(null);
+                    }}
+                    placeholder="example@email.com"
+                    autoComplete="email"
+                    dir="ltr"
+                    disabled={isLoading}
+                    className="
+                      w-full
+                      rounded-2xl
+                      border
+                      border-[#0d1a12]/10
+                      bg-white/80
+                      px-4
+                      py-2.5
+                      text-left
+                      text-sm
+                      text-[#0d1a12]
+                      outline-none
+                      transition
+                      placeholder:text-[#0d1a12]/30
+                      focus:border-[#b9d19a]
+                      focus:ring-4
+                      focus:ring-[#b9d19a]/20
+                      disabled:cursor-not-allowed
+                      disabled:opacity-60
+                    "
+                  />
+                </div>
 
-              <label
-                htmlFor="password"
-                className="mb-2 block text-sm font-medium text-gray-700"
-              >
-                رمز عبور
-              </label>
+                {/* PASSWORD */}
 
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(event) => {
-                  setPassword(
-                    event.target.value
-                  );
+                <div>
+                  <label
+                    htmlFor="register-password"
+                    className="
+                      mb-1.5
+                      block
+                      text-sm
+                      font-medium
+                      text-[#0d1a12]/75
+                    "
+                  >
+                    رمز عبور
+                  </label>
 
-                  setError(null);
-                }}
-                placeholder="حداقل ۸ کاراکتر"
-                autoComplete="new-password"
-                dir="ltr"
-                disabled={isLoading}
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-left text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-600 focus:ring-2 focus:ring-green-100 disabled:cursor-not-allowed disabled:bg-gray-50"
-              />
+                  <input
+                    id="register-password"
+                    type="password"
+                    value={password}
+                    onChange={(event) => {
+                      setPassword(
+                        event.target.value
+                      );
+                      setError(null);
+                    }}
+                    placeholder="حداقل ۸ کاراکتر"
+                    autoComplete="new-password"
+                    dir="ltr"
+                    disabled={isLoading}
+                    className="
+                      w-full
+                      rounded-2xl
+                      border
+                      border-[#0d1a12]/10
+                      bg-white/80
+                      px-4
+                      py-2.5
+                      text-left
+                      text-sm
+                      text-[#0d1a12]
+                      outline-none
+                      transition
+                      placeholder:text-[#0d1a12]/30
+                      focus:border-[#b9d19a]
+                      focus:ring-4
+                      focus:ring-[#b9d19a]/20
+                      disabled:cursor-not-allowed
+                      disabled:opacity-60
+                    "
+                  />
+                </div>
 
-            </div>
+                {/* CONFIRM PASSWORD */}
 
-            {/* CONFIRM PASSWORD */}
+                <div>
+                  <label
+                    htmlFor="confirmPassword"
+                    className="
+                      mb-1.5
+                      block
+                      text-sm
+                      font-medium
+                      text-[#0d1a12]/75
+                    "
+                  >
+                    تکرار رمز عبور
+                  </label>
 
-            <div>
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(event) => {
+                      setConfirmPassword(
+                        event.target.value
+                      );
+                      setError(null);
+                    }}
+                    placeholder="رمز عبور را دوباره وارد کنید"
+                    autoComplete="new-password"
+                    dir="ltr"
+                    disabled={isLoading}
+                    className="
+                      w-full
+                      rounded-2xl
+                      border
+                      border-[#0d1a12]/10
+                      bg-white/80
+                      px-4
+                      py-2.5
+                      text-left
+                      text-sm
+                      text-[#0d1a12]
+                      outline-none
+                      transition
+                      placeholder:text-[#0d1a12]/30
+                      focus:border-[#b9d19a]
+                      focus:ring-4
+                      focus:ring-[#b9d19a]/20
+                      disabled:cursor-not-allowed
+                      disabled:opacity-60
+                    "
+                  />
+                </div>
 
-              <label
-                htmlFor="confirmPassword"
-                className="mb-2 block text-sm font-medium text-gray-700"
-              >
-                تکرار رمز عبور
-              </label>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="
+                    mt-1
+                    w-full
+                    rounded-full
+                    bg-[#0d1a12]
+                    py-3
+                    text-sm
+                    font-medium
+                    text-[#f2e9d8]
+                    transition-all
+                    duration-500
+                    hover:bg-[#355e3b]
+                    hover:shadow-[0_15px_35px_-15px_rgba(13,26,18,0.5)]
+                    disabled:cursor-not-allowed
+                    disabled:opacity-50
+                  "
+                >
+                  {isLoading
+                    ? "در حال ثبت‌نام..."
+                    : "ثبت‌نام"}
+                </button>
+              </form>
+            )}
 
-              <input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(event) => {
-                  setConfirmPassword(
-                    event.target.value
-                  );
+            {/* LOGIN */}
 
-                  setError(null);
-                }}
-                placeholder="رمز عبور را دوباره وارد کنید"
-                autoComplete="new-password"
-                dir="ltr"
-                disabled={isLoading}
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-left text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-600 focus:ring-2 focus:ring-green-100 disabled:cursor-not-allowed disabled:bg-gray-50"
-              />
-
-            </div>
-
-            {/* REGISTER BUTTON */}
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full rounded-xl bg-green-700 px-4 py-3 font-medium text-white transition hover:bg-green-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+            <div
+              className="
+                mt-4
+                text-center
+                text-sm
+                text-[#0d1a12]/50
+              "
             >
-              {isLoading
-                ? "در حال ثبت‌نام..."
-                : "ثبت‌نام"}
-            </button>
+              قبلاً حساب کاربری دارید؟
 
-          </form>
-        )}
+              {" "}
 
-        {/* LOGIN LINK */}
+              <Link
+                href="/login"
+                className="
+                  font-semibold
+                  text-[#355e3b]
+                  transition
+                  hover:text-[#0d1a12]
+                "
+              >
+                وارد شوید
+              </Link>
+            </div>
 
-        <div className="mt-7 text-center text-sm text-gray-500">
+            {/* FOOTER */}
 
-          قبلاً حساب کاربری دارید؟
-
-          <button
-            type="button"
-            onClick={() =>
-              router.push("/login")
-            }
-            className="mr-1 font-medium text-green-700 transition hover:text-green-800"
-          >
-            وارد شوید
-          </button>
-
+            <p
+              className="
+                mt-3
+                text-center
+                text-xs
+                leading-5
+                text-[#0d1a12]/35
+              "
+            >
+              با ثبت‌نام در حساب کاربری،
+              شرایط استفاده از سرویس را
+              می‌پذیرید.
+            </p>
+          </div>
         </div>
-
-        {/* FOOTER */}
-
-        <p className="mt-6 text-center text-xs leading-5 text-gray-400">
-          با ثبت‌نام در حساب کاربری، شرایط استفاده از سرویس را می‌پذیرید.
-        </p>
-
-      </div>
+      </Container>
     </main>
   );
 }

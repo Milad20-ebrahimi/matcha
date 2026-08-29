@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -21,73 +22,60 @@ import {
   useAuthContext,
 } from "@/features/auth/auth.context";
 
+type VerifyMode = "login" | "register";
+
 function VerifyOtpContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const {
-    setSession,
-  } = useAuthContext();
+  const { setSession } = useAuthContext();
 
-  const mode =
+  const mode: VerifyMode =
     searchParams.get("mode") === "register"
       ? "register"
       : "login";
 
-  const [
-    otpId,
-    setOtpId,
-  ] = useState<string | null>(null);
+  const [otpId, setOtpId] =
+    useState<string | null>(null);
 
-  const [
-    phone,
-    setPhone,
-  ] = useState<string | null>(null);
+  const [phone, setPhone] =
+    useState<string | null>(null);
 
-  const [
-    firstName,
-    setFirstName,
-  ] = useState<string | null>(null);
+  const [firstName, setFirstName] =
+    useState<string | null>(null);
 
-  const [
-    code,
-    setCode,
-  ] = useState("");
+  const [code, setCode] =
+    useState("");
 
-  const [
-    isLoading,
-    setIsLoading,
-  ] = useState(false);
+  const [isLoading, setIsLoading] =
+    useState(false);
 
-  const [
-    error,
-    setError,
-  ] = useState("");
+  const [error, setError] =
+    useState("");
+
+  // ==========================================
+  // LOAD OTP DATA
+  // ==========================================
 
   useEffect(() => {
-    const savedOtpId =
-      sessionStorage.getItem(
-        "matcha_registration_otp_id"
-      );
-
-    const savedPhone =
-      sessionStorage.getItem(
-        "matcha_registration_phone"
-      );
-
-    const savedFirstName =
-      sessionStorage.getItem(
-        "matcha_registration_first_name"
-      );
-
-    /*
-     * ثبت‌نام با موبایل
-     */
     if (mode === "register") {
-      if (!savedOtpId || !savedPhone) {
-        router.replace(
-          "/register?mode=phone"
+      const savedOtpId =
+        sessionStorage.getItem(
+          "matcha_registration_otp_id"
         );
+
+      const savedPhone =
+        sessionStorage.getItem(
+          "matcha_registration_phone"
+        );
+
+      const savedFirstName =
+        sessionStorage.getItem(
+          "matcha_registration_first_name"
+        );
+
+      if (!savedOtpId || !savedPhone) {
+        router.replace("/register");
 
         return;
       }
@@ -99,31 +87,29 @@ function VerifyOtpContent() {
       return;
     }
 
-    /*
-     * ورود با موبایل
-     *
-     * این مقادیر از login/page.tsx
-     * در sessionStorage ذخیره می‌شوند.
-     */
-    const loginOtpId =
+    const savedOtpId =
       sessionStorage.getItem(
         "matcha_otp_id"
       );
 
-    const loginPhone =
+    const savedPhone =
       sessionStorage.getItem(
         "matcha_phone"
       );
 
-    if (!loginOtpId || !loginPhone) {
+    if (!savedOtpId || !savedPhone) {
       router.replace("/login");
 
       return;
     }
 
-    setOtpId(loginOtpId);
-    setPhone(loginPhone);
+    setOtpId(savedOtpId);
+    setPhone(savedPhone);
   }, [mode, router]);
+
+  // ==========================================
+  // VERIFY OTP
+  // ==========================================
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>
@@ -158,9 +144,6 @@ function VerifyOtpContent() {
     try {
       setIsLoading(true);
 
-      /*
-       * اول OTP را بررسی می‌کنیم
-       */
       const response =
         await verifyOtp(
           otpId,
@@ -174,16 +157,16 @@ function VerifyOtpContent() {
         needsName,
       } = response.data;
 
-      /*
-       * ========================================
-       * ثبت‌نام با موبایل
-       * ========================================
-       */
+      // ========================================
+      // REGISTER WITH PHONE
+      // ========================================
+
       if (mode === "register") {
         /*
-         * اگر verifyOtp توکن برگرداند،
-         * یعنی کاربر قبلاً وجود داشته است.
+         * اگر شماره قبلاً ثبت شده باشد،
+         * اجازه ثبت‌نام مجدد نمی‌دهیم.
          */
+
         if (
           !isNewUser &&
           accessToken &&
@@ -196,10 +179,6 @@ function VerifyOtpContent() {
           return;
         }
 
-        /*
-         * بعد از تأیید OTP،
-         * ثبت‌نام را کامل می‌کنیم.
-         */
         const savedFirstName =
           firstName?.trim();
 
@@ -210,6 +189,10 @@ function VerifyOtpContent() {
 
           return;
         }
+
+        /*
+         * تکمیل ثبت‌نام بعد از تأیید OTP
+         */
 
         const registration =
           await completeRegistration(
@@ -243,6 +226,7 @@ function VerifyOtpContent() {
         /*
          * پاک کردن اطلاعات موقت ثبت‌نام
          */
+
         sessionStorage.removeItem(
           "matcha_registration_otp_id"
         );
@@ -260,25 +244,19 @@ function VerifyOtpContent() {
         return;
       }
 
-      /*
-       * ========================================
-       * ورود با موبایل
-       * ========================================
-       */
+      // ========================================
+      // LOGIN WITH PHONE
+      // ========================================
 
       /*
-       * کاربر جدید نباید از صفحه Login
-       * مستقیماً وارد حساب شود.
-       *
-       * در این حالت باید به Register برود.
+       * کاربر جدید نباید مستقیماً
+       * از Login وارد حساب شود.
        */
+
       if (
         isNewUser &&
         needsName
       ) {
-        /*
-         * اطلاعات لازم برای ثبت‌نام
-         */
         sessionStorage.setItem(
           "matcha_registration_otp_id",
           otpId
@@ -287,6 +265,10 @@ function VerifyOtpContent() {
         sessionStorage.setItem(
           "matcha_registration_phone",
           phone ?? ""
+        );
+
+        sessionStorage.removeItem(
+          "matcha_registration_first_name"
         );
 
         router.replace(
@@ -299,6 +281,7 @@ function VerifyOtpContent() {
       /*
        * کاربر قدیمی
        */
+
       if (
         !accessToken ||
         !refreshToken
@@ -314,8 +297,9 @@ function VerifyOtpContent() {
       });
 
       /*
-       * پاک کردن اطلاعات OTP ورود
+       * پاک کردن اطلاعات موقت Login
        */
+
       sessionStorage.removeItem(
         "matcha_otp_id"
       );
@@ -345,6 +329,10 @@ function VerifyOtpContent() {
     }
   }
 
+  // ==========================================
+  // BACK
+  // ==========================================
+
   function handleBack() {
     if (mode === "register") {
       router.push(
@@ -357,119 +345,301 @@ function VerifyOtpContent() {
     router.push("/login");
   }
 
+  // ==========================================
+  // UI
+  // ==========================================
+
   return (
     <main
       dir="rtl"
-      className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8"
+      className="
+        relative
+        flex
+        min-h-screen
+        items-center
+        justify-center
+        overflow-hidden
+        bg-[#f8f5ed]
+        px-4
+        py-6
+        sm:px-6
+        sm:py-10
+      "
     >
-      <div className="w-full max-w-md rounded-2xl border border-gray-100 bg-white p-6 shadow-sm sm:p-8">
+      {/* TOP RIGHT GLOW */}
 
-        {/* BRAND */}
+      <div
+        className="
+          pointer-events-none
+          absolute
+          -right-32
+          -top-32
+          h-80
+          w-80
+          rounded-full
+          bg-[#b9d19a]/30
+          blur-3xl
+          sm:h-96
+          sm:w-96
+        "
+      />
 
-        <div className="mb-8 text-center">
+      {/* BOTTOM LEFT GLOW */}
 
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-green-700 text-2xl font-bold text-white">
-            M
+      <div
+        className="
+          pointer-events-none
+          absolute
+          -bottom-40
+          -left-32
+          h-80
+          w-80
+          rounded-full
+          bg-[#355e3b]/10
+          blur-3xl
+          sm:h-96
+          sm:w-96
+        "
+      />
+
+      <div
+        className="
+          relative
+          z-10
+          w-full
+          max-w-md
+        "
+      >
+        {/* CARD */}
+
+        <div
+          className="
+            rounded-[32px]
+            border
+            border-[#b9d19a]/40
+            bg-white/75
+            p-6
+            shadow-[0_30px_80px_-40px_rgba(13,26,18,0.35)]
+            backdrop-blur-xl
+            sm:rounded-[40px]
+            sm:p-9
+          "
+        >
+          {/* BRAND */}
+
+          <div className="mb-7 text-center sm:mb-8">
+
+            <p
+              className="
+                text-xs
+                tracking-[0.3em]
+                text-[#355e3b]
+              "
+            >
+              MATCH—CAFE
+            </p>
+
+            <h1
+              className="
+                mt-4
+                text-2xl
+                font-light
+                text-[#0d1a12]
+                sm:text-3xl
+              "
+            >
+              تأیید شماره موبایل
+            </h1>
+
+            <p
+              className="
+                mx-auto
+                mt-3
+                max-w-sm
+                text-sm
+                leading-7
+                text-[#0d1a12]/55
+              "
+            >
+              {mode === "register"
+                ? "برای تکمیل ثبت‌نام، کد تأیید ارسال‌شده به شماره موبایل زیر را وارد کنید."
+                : "کد تأیید ارسال‌شده به شماره موبایل زیر را وارد کنید."}
+            </p>
+
+            {phone && (
+              <div
+                dir="ltr"
+                className="
+                  mt-4
+                  inline-flex
+                  rounded-full
+                  bg-[#f2eee4]
+                  px-5
+                  py-2.5
+                  text-sm
+                  font-medium
+                  text-[#0d1a12]
+                "
+              >
+                {phone}
+              </div>
+            )}
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-900">
-            تأیید شماره موبایل
-          </h1>
+          {/* ERROR */}
 
-          <p className="mt-2 text-sm leading-6 text-gray-500">
-            کد تأیید ارسال‌شده به شماره زیر را وارد کنید.
-          </p>
-
-          {phone && (
-            <p
-              dir="ltr"
-              className="mt-3 text-base font-semibold text-gray-900"
+          {error && (
+            <div
+              role="alert"
+              className="
+                mb-5
+                rounded-2xl
+                border
+                border-red-100
+                bg-red-50
+                px-4
+                py-3
+                text-center
+                text-sm
+                leading-6
+                text-red-600
+              "
             >
-              {phone}
-            </p>
+              {error}
+            </div>
           )}
 
-        </div>
+          {/* OTP FORM */}
 
-        {/* ERROR */}
-
-        {error && (
-          <div
-            role="alert"
-            className="mb-5 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm leading-6 text-red-600"
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-5"
           >
-            {error}
-          </div>
-        )}
+            <div>
+              <label
+                htmlFor="otp"
+                className="
+                  mb-2
+                  block
+                  text-sm
+                  font-medium
+                  text-[#0d1a12]/75
+                "
+              >
+                کد تأیید
+              </label>
 
-        {/* OTP FORM */}
+              <input
+                id="otp"
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                autoComplete="one-time-code"
+                autoFocus
+                dir="ltr"
+                value={code}
+                onChange={(event) => {
+                  const value =
+                    event.target.value.replace(
+                      /\D/g,
+                      ""
+                    );
 
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-5"
-        >
+                  setCode(value);
+                  setError("");
+                }}
+                placeholder="123456"
+                disabled={
+                  isLoading
+                }
+                className="
+                  w-full
+                  rounded-2xl
+                  border
+                  border-[#0d1a12]/10
+                  bg-white/80
+                  px-5
+                  py-4
+                  text-center
+                  text-xl
+                  font-medium
+                  tracking-[0.5em]
+                  text-[#0d1a12]
+                  outline-none
+                  transition
+                  placeholder:text-[#0d1a12]/20
+                  focus:border-[#b9d19a]
+                  focus:ring-4
+                  focus:ring-[#b9d19a]/20
+                  disabled:cursor-not-allowed
+                  disabled:opacity-60
+                "
+              />
+            </div>
 
-          <div>
-
-            <label
-              htmlFor="otp"
-              className="mb-2 block text-sm font-medium text-gray-700"
+            <button
+              type="submit"
+              disabled={
+                isLoading ||
+                code.length !== 6
+              }
+              className="
+                w-full
+                rounded-full
+                bg-[#0d1a12]
+                py-4
+                text-sm
+                font-medium
+                text-[#f2e9d8]
+                transition-all
+                duration-500
+                hover:bg-[#355e3b]
+                hover:shadow-[0_15px_35px_-15px_rgba(13,26,18,0.5)]
+                active:scale-[0.99]
+                disabled:cursor-not-allowed
+                disabled:opacity-50
+              "
             >
-              کد تأیید
-            </label>
+              {isLoading
+                ? "در حال بررسی..."
+                : mode === "register"
+                  ? "تأیید و تکمیل ثبت‌نام"
+                  : "تأیید و ورود"}
+            </button>
 
-            <input
-              id="otp"
-              type="text"
-              inputMode="numeric"
-              maxLength={6}
-              autoComplete="one-time-code"
-              autoFocus
-              dir="ltr"
-              value={code}
-              onChange={(event) => {
-                const value =
-                  event.target.value.replace(
-                    /\D/g,
-                    ""
-                  );
-
-                setCode(value);
-                setError("");
-              }}
-              placeholder="123456"
+            <button
+              type="button"
+              onClick={handleBack}
               disabled={isLoading}
-              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-center text-xl font-medium tracking-[0.5em] text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-green-600 focus:ring-2 focus:ring-green-100 disabled:cursor-not-allowed disabled:bg-gray-50"
-            />
+              className="
+                w-full
+                py-1
+                text-sm
+                text-[#0d1a12]/50
+                transition
+                hover:text-[#355e3b]
+                disabled:cursor-not-allowed
+                disabled:opacity-50
+              "
+            >
+              بازگشت
+            </button>
+          </form>
 
-          </div>
+          {/* SECURITY NOTE */}
 
-          <button
-            type="submit"
-            disabled={
-              isLoading ||
-              code.length !== 6
-            }
-            className="w-full rounded-xl bg-green-700 px-4 py-3 font-medium text-white transition hover:bg-green-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+          <p
+            className="
+              mt-6
+              text-center
+              text-xs
+              leading-5
+              text-[#0d1a12]/35
+            "
           >
-            {isLoading
-              ? "در حال بررسی..."
-              : mode === "register"
-                ? "تأیید و تکمیل ثبت‌نام"
-                : "تأیید و ورود"}
-          </button>
-
-          <button
-            type="button"
-            onClick={handleBack}
-            disabled={isLoading}
-            className="w-full text-sm text-gray-500 transition hover:text-green-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            بازگشت
-          </button>
-
-        </form>
-
+            کد تأیید را فقط در همین صفحه وارد کنید.
+          </p>
+        </div>
       </div>
     </main>
   );
@@ -481,9 +651,21 @@ export default function VerifyOtpPage() {
       fallback={
         <main
           dir="rtl"
-          className="flex min-h-screen items-center justify-center bg-gray-50 px-4"
+          className="
+            flex
+            min-h-screen
+            items-center
+            justify-center
+            bg-[#f8f5ed]
+            px-4
+          "
         >
-          <div className="text-sm text-gray-500">
+          <div
+            className="
+              text-sm
+              text-[#0d1a12]/50
+            "
+          >
             در حال بارگذاری...
           </div>
         </main>

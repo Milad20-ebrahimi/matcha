@@ -44,12 +44,12 @@ export function ProductsProvider({
       .then((data) => {
         setProducts(data);
       })
-      .catch((error) => {
-        console.error(
-          "Failed loading products:",
-          error
-        );
-      })
+.catch((error) => {
+  console.error(
+    "Failed loading products:",
+    error
+  );
+})
       .finally(() => {
         setLoading(false);
       });

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 
@@ -49,26 +49,22 @@ export default function AddToCartButton({
   }
 
   return (
-<Button
-  type="button"
-  disabled={adding}
-  onClick={handleClick}
-  className="
-    w-full
-    py-4
-    text-base
-    font-semibold
-    !bg-[#d9823b]
-    !text-white
-    hover:!bg-[#b8672a]
-    transition-colors
-  "
->
+    <Button
+      onClick={handleClick}
+      disabled={adding}
+      className="
+        w-full
+        py-4
+        text-base
+        font-semibold
+      "
+    >
       {adding
-        ? "در حال افزودن..."
+        ? "Ø¯Ø± Ø­Ø§Ù„ Ø§ÙØ²ÙˆØ¯Ù†..."
         : added
-          ? "✓ اضافه شد"
-          : "افزودن به سبد خرید"}
+          ? "âœ“ Ø§Ø¶Ø§ÙÙ‡ Ø´Ø¯"
+          : "Ø§ÙØ²ÙˆØ¯Ù† Ø¨Ù‡ Ø³Ø¨Ø¯ Ø®Ø±ÛŒØ¯"}
     </Button>
   );
 }
+

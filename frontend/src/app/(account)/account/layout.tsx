@@ -1,231 +1,39 @@
-"use client";
 
-import Link from "next/link";
-import {
-usePathname,
-useRouter,
-} from "next/navigation";
+import type { ReactNode } from "react";
 
-import {
-useAuthContext,
-} from "@/features/auth/auth.context";
-
-const menuItems = [
-{
-href: "/account",
-label: "پروفایل",
-},
-{
-href: "/account/addresses",
-label: "آدرس‌های من",
-},
-{
-href: "/account/orders",
-label: "سفارش‌های من",
-},
-{
-href: "/account/messages",
-label: "پیام‌ها",
-},
-{
-href: "/account/wishlist",
-label: "علاقه‌مندی‌ها",
-},
-{
-href: "/account/reviews",
-label: "نظرات من",
-},
-{
-href: "/account/photos",
-label: "تصاویر من",
-},
-];
+import Container from "@/components/shared/Container";
+import AccountSidebar from "@/components/account/AccountSidebar";
 
 export default function AccountLayout({
-children,
+  children,
 }: {
-children: React.ReactNode;
+  children: ReactNode;
 }) {
-const pathname =
-usePathname();
+  return (
+    <main className="min-h-screen bg-[#f8f5ed] py-28">
+      <Container>
+        <div className="mb-10">
+          <p className="text-xs tracking-[0.35em] text-[#355e3b]">
+            MY ACCOUNT
+          </p>
 
-const router =
-useRouter();
+          <h1 className="mt-4 text-4xl font-light text-[#203c27] sm:text-5xl">
+            حساب کاربری
+          </h1>
 
-const {
-user,
-logout,
-} = useAuthContext();
+          <p className="mt-4 max-w-2xl text-sm leading-8 text-[#203c27]/60">
+            مدیریت اطلاعات شخصی، سفارش‌ها، آدرس‌ها و علاقه‌مندی‌های شما.
+          </p>
+        </div>
 
-async function handleLogout() {
-await logout();
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
+          <AccountSidebar />
 
-router.replace("/login");
-
-}
-
-return (
-<main
-dir="rtl"
-style={{
-minHeight: "100vh",
-background: "#f7f7f5",
-padding: "40px 20px",
-}}
->
-<div
-style={{
-width: "100%",
-maxWidth: "1200px",
-margin: "0 auto",
-}}
->
-<header
-style={{
-marginBottom: "24px",
-}}
->
-<h1
-style={{
-margin: 0,
-fontSize: "32px",
-}}
->
-حساب کاربری </h1>
-
-      <p
-        style={{
-          marginTop: "8px",
-          color: "#666",
-        }}
-      >
-        {user?.firstName
-          ? `سلام ${user.firstName}، خوش آمدید`
-          : "مدیریت حساب کاربری شما"}
-      </p>
-    </header>
-
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns:
-          "260px minmax(0, 1fr)",
-        gap: "24px",
-        alignItems: "start",
-      }}
-    >
-      <aside
-        style={{
-          background: "#fff",
-          border:
-            "1px solid #e5e5e5",
-          borderRadius: "20px",
-          padding: "12px",
-          position: "sticky",
-          top: "24px",
-        }}
-      >
-        <nav>
-          {menuItems.map(
-            (item) => {
-              const isActive =
-                item.href ===
-                  "/account"
-                  ? pathname ===
-                    "/account"
-                  : pathname.startsWith(
-                      item.href
-                    );
-
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  style={{
-                    display:
-                      "block",
-                    padding:
-                      "14px 16px",
-                    marginBottom:
-                      "4px",
-                    borderRadius:
-                      "12px",
-                    textDecoration:
-                      "none",
-                    color:
-                      isActive
-                        ? "#111"
-                        : "#555",
-                    background:
-                      isActive
-                        ? "#f0f0ec"
-                        : "transparent",
-                    fontWeight:
-                      isActive
-                        ? 700
-                        : 400,
-                  }}
-                >
-                  {item.label}
-                </Link>
-              );
-            }
-          )}
-        </nav>
-
-        <div
-          style={{
-            height: "1px",
-            background:
-              "#eeeeee",
-            margin:
-              "12px 4px",
-          }}
-        />
-
-        <button
-          type="button"
-          onClick={
-            handleLogout
-          }
-          style={{
-            width: "100%",
-            border: "none",
-            background:
-              "transparent",
-            padding:
-              "14px 16px",
-            borderRadius:
-              "12px",
-            textAlign:
-              "right",
-            cursor:
-              "pointer",
-            color:
-              "#b42318",
-            fontSize:
-              "15px",
-          }}
-        >
-          خروج از حساب
-        </button>
-      </aside>
-
-      <section
-        style={{
-          minWidth: 0,
-          background: "#fff",
-          border:
-            "1px solid #e5e5e5",
-          borderRadius: "20px",
-          padding: "28px",
-        }}
-      >
-        {children}
-      </section>
-    </div>
-  </div>
-</main>
-
-);
+          <section className="min-w-0 flex-1">
+            {children}
+          </section>
+        </div>
+      </Container>
+    </main>
+  );
 }
