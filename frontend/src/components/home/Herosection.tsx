@@ -1,8 +1,14 @@
+
 "use client";
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import Container from "@/components/shared/Container";
 
@@ -40,16 +46,96 @@ const slides = [
 ];
 
 const cafePhone = "021-12345678";
-const cafeAddress = "تهران، خیابان ولیعصر";
+const cafeAddress = "تبریز، فلکه دانشگاه";
 
 export default function HeroSection() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [scrollY, setScrollY] = useState(0);
 
+  // وضعیت باز یا بسته بودن کافه
+  const [isCafeOpen, setIsCafeOpen] = useState(false);
+
   const touchStartX = useRef<number | null>(null);
 
   const activeSlide = slides[activeIndex];
+
+  /*
+   * --------------------------------
+   * Cafe Status
+   * --------------------------------
+   *
+   * ساعت کاری:
+   * هر روز هفته
+   * 07:00 تا 23:00
+   *
+   * زمان بر اساس ساعت ایران
+   * Asia/Tehran محاسبه می‌شود.
+   */
+  useEffect(() => {
+    const updateCafeStatus = () => {
+      const formatter = new Intl.DateTimeFormat(
+        "en-US",
+        {
+          timeZone: "Asia/Tehran",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        }
+      );
+
+      const parts = formatter.formatToParts(
+        new Date()
+      );
+
+      const hourPart = parts.find(
+        (part) => part.type === "hour"
+      );
+
+      const minutePart = parts.find(
+        (part) => part.type === "minute"
+      );
+
+      const hour = Number(
+        hourPart?.value ?? 0
+      );
+
+      const minute = Number(
+        minutePart?.value ?? 0
+      );
+
+      const currentMinutes =
+        hour * 60 + minute;
+
+      const openingTime = 7 * 60; // 07:00
+      const closingTime = 23 * 60; // 23:00
+
+      const cafeIsOpen =
+        currentMinutes >= openingTime &&
+        currentMinutes < closingTime;
+
+      setIsCafeOpen(cafeIsOpen);
+    };
+
+    // بررسی اولیه
+    updateCafeStatus();
+
+    // بررسی وضعیت هر دقیقه
+    const interval = setInterval(
+      updateCafeStatus,
+      60 * 1000
+    );
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
+
+  /*
+   * --------------------------------
+   * Slider Navigation
+   * --------------------------------
+   */
 
   const goTo = useCallback((index: number) => {
     const nextIndex =
@@ -67,8 +153,11 @@ export default function HeroSection() {
   }, [activeIndex, goTo]);
 
   /*
+   * --------------------------------
    * Auto Play
+   * --------------------------------
    */
+
   useEffect(() => {
     if (!isPlaying) return;
 
@@ -77,11 +166,18 @@ export default function HeroSection() {
     }, 5000);
 
     return () => clearTimeout(timer);
-  }, [activeIndex, isPlaying, goNext]);
+  }, [
+    activeIndex,
+    isPlaying,
+    goNext,
+  ]);
 
   /*
+   * --------------------------------
    * Scroll / Parallax
+   * --------------------------------
    */
+
   useEffect(() => {
     const handleScroll = () => {
       setScrollY(window.scrollY);
@@ -90,7 +186,9 @@ export default function HeroSection() {
     window.addEventListener(
       "scroll",
       handleScroll,
-      { passive: true }
+      {
+        passive: true,
+      }
     );
 
     return () => {
@@ -102,8 +200,11 @@ export default function HeroSection() {
   }, []);
 
   /*
+   * --------------------------------
    * Keyboard Navigation
+   * --------------------------------
    */
+
   useEffect(() => {
     const handleKeyDown = (
       event: KeyboardEvent
@@ -137,8 +238,11 @@ export default function HeroSection() {
   }, [goNext, goPrev]);
 
   /*
+   * --------------------------------
    * Swipe
+   * --------------------------------
    */
+
   const handleTouchStart = (
     event: React.TouchEvent
   ) => {
@@ -168,6 +272,12 @@ export default function HeroSection() {
     touchStartX.current = null;
   };
 
+  /*
+   * --------------------------------
+   * Parallax
+   * --------------------------------
+   */
+
   const parallaxOffset = Math.min(
     Math.max(scrollY * 0.12, 0),
     30
@@ -187,14 +297,13 @@ export default function HeroSection() {
         bg-stone-950
       "
     >
-
       {/* Screen Reader */}
       <div
         className="sr-only"
         aria-live="polite"
       >
-        اسلاید {activeIndex + 1} از {slides.length}:{" "}
-        {activeSlide.title}
+        اسلاید {activeIndex + 1} از{" "}
+        {slides.length}: {activeSlide.title}
       </div>
 
       {/* Background Slides */}
@@ -218,7 +327,6 @@ export default function HeroSection() {
             `}
             aria-hidden={!isActive}
           >
-
             <div
               className="absolute inset-0"
               style={{
@@ -250,94 +358,101 @@ export default function HeroSection() {
                 to-black/10
               "
             />
-
           </div>
         );
       })}
 
-{/* Contact / Cafe Status */}
-<div
-  className="
-    absolute
-    right-4
-    top-24
-    z-30
-    flex
-    w-[160px]
-    flex-col
-    gap-1.5
-    rounded-2xl
-    border
-    border-white/20
-    bg-black/30
-    p-3
-    text-right
-    shadow-lg
-    backdrop-blur-xl
-    sm:right-6
-    sm:top-28
-    sm:w-auto
-  "
->
-  {/* Status */}
-  <span
-    className="
-      self-center
-      inline-flex
-      items-center
-      gap-2
-      rounded-full
-      border
-      border-emerald-400/30
-      bg-emerald-400/10
-      px-2.5
-      py-1
-      text-[11px]
-      font-medium
-      text-emerald-300
-    "
-  >
-    <span
-      className="
-        h-1.5
-        w-1.5
-        rounded-full
-        bg-emerald-400
-      "
-    />
+      {/* Contact / Cafe Status */}
+      <div
+        className="
+          absolute
+          right-4
+          top-24
+          z-30
+          flex
+          w-[160px]
+          flex-col
+          gap-1.5
+          rounded-2xl
+          border
+          border-white/20
+          bg-black/30
+          p-3
+          text-right
+          shadow-lg
+          backdrop-blur-xl
+          sm:right-6
+          sm:top-28
+          sm:w-auto
+        "
+      >
+        {/* Cafe Status */}
+        <span
+          className={`
+            self-center
+            inline-flex
+            items-center
+            gap-2
+            rounded-full
+            border
+            px-2.5
+            py-1
+            text-[11px]
+            font-medium
+            ${
+              isCafeOpen
+                ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
+                : "border-red-400/30 bg-red-400/10 text-red-300"
+            }
+          `}
+        >
+          <span
+            className={`
+              h-1.5
+              w-1.5
+              rounded-full
+              ${
+                isCafeOpen
+                  ? "bg-emerald-400"
+                  : "bg-red-400"
+              }
+            `}
+          />
 
-    باز است
-  </span>
+          {isCafeOpen
+            ? "باز است"
+            : "بسته است"}
+        </span>
 
-  {/* Phone */}
-  <a
-    href={`tel:${cafePhone}`}
-    className="
-      mt-1
-      w-full
-      text-right
-      text-xs
-      text-stone-100
-      transition
-      hover:text-amber-300
-    "
-  >
-    {cafePhone}
-  </a>
+        {/* Phone */}
+        <a
+          href={`tel:${cafePhone}`}
+          className="
+            mt-1
+            w-full
+            text-right
+            text-xs
+            text-stone-100
+            transition
+            hover:text-amber-300
+          "
+        >
+          {cafePhone}
+        </a>
 
-  {/* Address */}
-  <span
-    className="
-      w-full
-      text-right
-      text-[11px]
-      leading-5
-      text-stone-300
-    "
-  >
-    {cafeAddress}
-  </span>
-</div>
+        {/* Address */}
+        <span
+          className="
+            w-full
+            text-right
+            text-[11px]
+            leading-5
+            text-stone-300
+          "
+        >
+          {cafeAddress}
+        </span>
+      </div>
 
       {/* Content */}
       <div
@@ -351,7 +466,6 @@ export default function HeroSection() {
         "
       >
         <Container>
-
           <div
             key={activeSlide.id}
             className="
@@ -359,7 +473,6 @@ export default function HeroSection() {
               animate-heroContent
             "
           >
-
             {/* Eyebrow */}
             <span
               className="
@@ -442,9 +555,7 @@ export default function HeroSection() {
             >
               {activeSlide.ctaLabel}
             </Link>
-
           </div>
-
         </Container>
       </div>
 
@@ -461,14 +572,12 @@ export default function HeroSection() {
           justify-between
         "
       >
-
         <div
           className="
             flex
             gap-3
           "
         >
-
           {/* Previous */}
           <button
             type="button"
@@ -518,11 +627,8 @@ export default function HeroSection() {
           >
             ›
           </button>
-
         </div>
-
       </div>
-
     </section>
   );
 }
