@@ -39,8 +39,7 @@ export async function getPaymentController(
   res: Response,
 ) {
   try {
-    const userId =
-      getUserId(req);
+    const userId = getUserId(req);
 
     if (!userId) {
       return res.status(401).json({
@@ -49,8 +48,9 @@ export async function getPaymentController(
       });
     }
 
-    const paymentId =
-      getParam(req.params.id);
+    const paymentId = getParam(
+      req.params.id,
+    );
 
     if (!paymentId) {
       return res.status(400).json({
@@ -97,8 +97,7 @@ export async function getPaymentByOrderController(
   res: Response,
 ) {
   try {
-    const userId =
-      getUserId(req);
+    const userId = getUserId(req);
 
     if (!userId) {
       return res.status(401).json({
@@ -107,10 +106,9 @@ export async function getPaymentByOrderController(
       });
     }
 
-    const orderId =
-      getParam(
-        req.params.orderId,
-      );
+    const orderId = getParam(
+      req.params.orderId,
+    );
 
     if (!orderId) {
       return res.status(400).json({
@@ -162,8 +160,9 @@ export async function updatePaymentStatusController(
   res: Response,
 ) {
   try {
-    const paymentId =
-      getParam(req.params.id);
+    const paymentId = getParam(
+      req.params.id,
+    );
 
     if (!paymentId) {
       return res.status(400).json({
@@ -176,12 +175,26 @@ export async function updatePaymentStatusController(
       status,
       authority,
       refId,
-    } = req.body;
+    } = req.body ?? {};
 
     if (!status) {
       return res.status(400).json({
         message:
           "وضعیت پرداخت الزامی است.",
+      });
+    }
+
+    const validStatuses = [
+      "PENDING",
+      "PAID",
+      "FAILED",
+      "REFUNDED",
+    ];
+
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        message:
+          "وضعیت پرداخت نامعتبر است.",
       });
     }
 

@@ -9,11 +9,13 @@ import {
 
 import { orders } from "./order.schema.js";
 
-export const paymentMethodEnum =
-  pgEnum("payment_method", [
+export const paymentMethodEnum = pgEnum(
+  "payment_method",
+  [
     "ONLINE",
     "CASH",
-  ]);
+  ],
+);
 
 export const payments = pgTable(
   "payments",
@@ -38,41 +40,27 @@ export const payments = pgTable(
       .default("PENDING")
       .notNull(),
 
-    method: paymentMethodEnum(
-      "method",
-    )
+    method: paymentMethodEnum("method")
       .default("ONLINE")
       .notNull(),
 
-    authority: varchar(
-      "authority",
-      {
-        length: 255,
-      },
-    ),
+    authority: varchar("authority", {
+      length: 255,
+    }),
 
-    refId: varchar(
-      "ref_id",
-      {
-        length: 255,
-      },
-    ),
+    refId: varchar("ref_id", {
+      length: 255,
+    }),
 
-    createdAt: timestamp(
-      "created_at",
-      {
-        withTimezone: true,
-      },
-    )
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
       .defaultNow()
       .notNull(),
 
-    updatedAt: timestamp(
-      "updated_at",
-      {
-        withTimezone: true,
-      },
-    )
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
       .defaultNow()
       .notNull(),
   },

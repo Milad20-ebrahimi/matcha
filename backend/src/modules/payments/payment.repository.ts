@@ -116,8 +116,7 @@ export async function updatePaymentStatus(
             }
           : {}),
 
-        updatedAt:
-          new Date(),
+        updatedAt: new Date(),
       })
       .where(
         eq(
@@ -134,7 +133,7 @@ export async function findUserPaymentById(
   paymentId: string,
   userId: string,
 ) {
-  const [payment] =
+  const [result] =
     await db
       .select({
         payment: payments,
@@ -162,5 +161,5 @@ export async function findUserPaymentById(
       )
       .limit(1);
 
-  return payment;
+  return result;
 }

@@ -14,21 +14,10 @@ import {
 
 const router = Router();
 
-/*
- * دریافت اطلاعات یک پرداخت
- *
- * GET /payments/:id
- */
-router.get(
-  "/:id",
-  requireAuth,
-  getPaymentController,
-);
-
-/*
- * دریافت پرداخت مربوط به یک سفارش
- *
+/**
  * GET /payments/order/:orderId
+ *
+ * دریافت پرداخت مربوط به یک سفارش
  */
 router.get(
   "/order/:orderId",
@@ -36,12 +25,21 @@ router.get(
   getPaymentByOrderController,
 );
 
-/*
- * تغییر وضعیت پرداخت
+/**
+ * GET /payments/:id
  *
+ * دریافت اطلاعات یک پرداخت
+ */
+router.get(
+  "/:id",
+  requireAuth,
+  getPaymentController,
+);
+
+/**
  * PATCH /payments/:id/status
  *
- * فعلاً برای تست و مدیریت داخلی.
+ * تغییر وضعیت پرداخت
  */
 router.patch(
   "/:id/status",

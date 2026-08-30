@@ -1,5 +1,4 @@
 import {
-  createPayment,
   findPaymentById,
   findPaymentByOrderId,
   findUserPaymentById,
@@ -59,14 +58,6 @@ export async function createOrderPayment(
     return existingPayment;
   }
 
-  /*
-   * Payment creation is normally performed
-   * inside the order transaction.
-   *
-   * This function is kept independent so
-   * it can also be used by controllers/services
-   * when needed.
-   */
   throw new Error(
     "Payment must be created inside an order transaction.",
   );
@@ -170,9 +161,7 @@ export async function changePaymentStatus(
     );
   }
 
-  if (
-    payment.status === "REFUNDED"
-  ) {
+  if (payment.status === "REFUNDED") {
     throw new Error(
       "A refunded payment cannot be changed.",
     );
@@ -196,18 +185,34 @@ export async function changePaymentStatus(
     );
   }
 
+  if (
+    payment.status === "FAILED" &&
+    data.status === "PENDING"
+  ) {
+    throw new Error(
+      "A failed payment cannot return to pending.",
+    );
+  }
+
   const updatedPayment =
     await updatePaymentStatus(
       paymentId,
       data.status,
-     {
-  ...(data.authority
-    ? { authority: data.authority }
-    : {}),
-  ...(data.refId
-    ? { refId: data.refId }
-    : {}),
-}
+      {
+        ...(data.authority !== undefined
+          ? {
+              authority:
+                data.authority,
+            }
+          : {}),
+
+        ...(data.refId !== undefined
+          ? {
+              refId:
+                data.refId,
+            }
+          : {}),
+      },
     );
 
   if (!updatedPayment) {

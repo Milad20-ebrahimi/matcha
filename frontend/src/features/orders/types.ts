@@ -8,6 +8,16 @@ export type OrderItem = {
   createdAt: string;
 };
 
+export type PaymentMethod =
+  | "ONLINE"
+  | "CASH";
+
+export type PaymentStatus =
+  | "PENDING"
+  | "PAID"
+  | "FAILED"
+  | "REFUNDED";
+
 export type Order = {
   id: string;
   userId: string;
@@ -20,13 +30,10 @@ export type Order = {
     | "DELIVERED"
     | "CANCELLED";
 
-  paymentStatus:
-    | "PENDING"
-    | "PAID"
-    | "FAILED"
-    | "REFUNDED";
+  paymentStatus: PaymentStatus;
 
   totalAmount: number;
+
   shippingAddress: string;
 
   createdAt: string;
@@ -37,6 +44,8 @@ export type Order = {
 
 export type CreateOrderInput = {
   shippingAddress: string;
+
+  paymentMethod: PaymentMethod;
 };
 
 export type CreateOrderResponse = {
@@ -44,6 +53,23 @@ export type CreateOrderResponse = {
 
   data: {
     order: Order;
+
+    payment: {
+      id: string;
+      orderId: string;
+      amount: number;
+
+      status: PaymentStatus;
+
+      method: PaymentMethod;
+
+      authority?: string | null;
+
+      refId?: string | null;
+
+      createdAt: string;
+      updatedAt: string;
+    };
 
     items: Omit<
       OrderItem,

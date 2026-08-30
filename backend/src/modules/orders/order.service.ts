@@ -19,20 +19,15 @@ import {
 import {
   createOrder,
   createOrderItems,
+  findOrdersByUserId,
+  findOrderById,
+  findOrderItems,
 } from "./order.repository.js";
 
 type CreateOrderInput = {
   shippingAddress: string;
   paymentMethod: "ONLINE" | "CASH";
 };
-
-type Transaction = Parameters<
-  typeof db.transaction
->[0] extends (
-  tx: infer T,
-) => unknown
-  ? T
-  : never;
 
 export async function createUserOrder(
   userId: string,
@@ -72,8 +67,10 @@ export async function createUserOrder(
         await tx
           .select({
             id: cartItems.id,
+
             productId:
               cartItems.productId,
+
             quantity:
               cartItems.quantity,
 
@@ -111,9 +108,7 @@ export async function createUserOrder(
 
       const orderItemsData =
         items.map((item) => {
-          if (
-            !item.product.isActive
-          ) {
+          if (!item.product.isActive) {
             throw new Error(
               `محصول ${item.product.name} در حال حاضر فعال نیست.`,
             );
@@ -158,7 +153,9 @@ export async function createUserOrder(
           tx,
           {
             userId,
+
             totalAmount,
+
             shippingAddress:
               data.shippingAddress.trim(),
           },
@@ -168,13 +165,18 @@ export async function createUserOrder(
         tx,
         orderItemsData.map(
           (item) => ({
-            orderId: order.id,
+            orderId:
+              order.id,
+
             productId:
               item.productId,
+
             productName:
               item.productName,
+
             productPrice:
               item.productPrice,
+
             quantity:
               item.quantity,
           }),
@@ -186,11 +188,17 @@ export async function createUserOrder(
       ] = await tx
         .insert(payments)
         .values({
-          orderId: order.id,
-          amount: totalAmount,
+          orderId:
+            order.id,
+
+          amount:
+            totalAmount,
+
           method:
             data.paymentMethod,
-          status: "PENDING",
+
+          status:
+            "PENDING",
         })
         .returning();
 
@@ -211,10 +219,51 @@ export async function createUserOrder(
 
       return {
         order,
+
         payment,
+
         items:
           orderItemsData,
       };
     },
   );
+}
+
+/**
+ * دریافت لیست سفارش‌های کاربر
+ */
+export async function getUserOrders(
+  userId: string,
+) {
+  return findOrdersByUserId(
+    userId,
+  );
+}
+
+/**
+ * دریافت یک سفارش به همراه آیتم‌های آن
+ */
+export async function getUserOrderById(
+  orderId: string,
+  userId: string,
+) {
+  const order =
+    await findOrderById(
+      orderId,
+      userId,
+    );
+
+  if (!order) {
+    return null;
+  }
+
+  const items =
+    await findOrderItems(
+      order.id,
+    );
+
+  return {
+    ...order,
+    items,
+  };
 }

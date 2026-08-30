@@ -70,18 +70,42 @@ export async function createOrderItems(
 export async function findOrdersByUserId(
   userId: string,
 ) {
-  return db
-    .select()
-    .from(orders)
-    .where(
-      eq(
-        orders.userId,
-        userId,
+  const userOrders =
+    await db
+      .select()
+      .from(orders)
+      .where(
+        eq(
+          orders.userId,
+          userId,
+        ),
+      )
+      .orderBy(
+        orders.createdAt,
+      );
+
+  if (userOrders.length === 0) {
+    return [];
+  }
+
+  const ordersWithItems =
+    await Promise.all(
+      userOrders.map(
+        async (order) => {
+          const items =
+            await findOrderItems(
+              order.id,
+            );
+
+          return {
+            ...order,
+            items,
+          };
+        },
       ),
-    )
-    .orderBy(
-      orders.createdAt,
     );
+
+  return ordersWithItems;
 }
 
 export async function findOrderById(
