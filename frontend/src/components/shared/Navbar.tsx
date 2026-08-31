@@ -1,22 +1,37 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
-import Link from "next/link";
-
 import {
-  ShoppingBag,
-  Menu,
-  X,
-  Leaf,
-  User,
-  Search,
+  createContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import {
   ChevronDown,
+  Leaf,
+  Menu,
+  Search,
+  ShoppingBag,
+  User,
+  X,
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+
+import type { Product } from "@/features/products/types";
+import {
+  fetchProducts,
+} from "@/features/products/services/product.service";
 
 import Container from "./Container";
 import { useCart } from "@/features/cart/cart.context";
+
+/* -------------------------------------------------------------------------- */
+/* Navigation                                                                 */
+/* -------------------------------------------------------------------------- */
 
 const navLinks = [
   {
@@ -41,69 +56,365 @@ const navLinks = [
   },
 ];
 
-const shopCategories = [
-  {
-    title: "ماچا",
-    items: [
-      { label: "همه محصولات ماچا", href: "/shop?category=matcha" },
-      { label: "ماچا تشریفاتی", href: "/shop?category=ceremonial-matcha" },
-      { label: "ماچا لاته", href: "/shop?category=matcha-latte" },
-    ],
-  },
-  {
-    title: "قهوه",
-    items: [
-      { label: "همه محصولات قهوه", href: "/shop?category=coffee" },
-      { label: "قهوه دانه", href: "/shop?category=coffee-beans" },
-      { label: "قهوه آسیاب شده", href: "/shop?category=ground-coffee" },
-    ],
-  },
-  {
-    title: "چای و دمنوش",
-    items: [
-      { label: "چای سبز", href: "/shop?category=green-tea" },
-      { label: "چای سیاه", href: "/shop?category=black-tea" },
-      { label: "دمنوش", href: "/shop?category=herbal-tea" },
-    ],
-  },
-  {
-    title: "ابزار دم‌آوری",
-    items: [
-      { label: "ابزار ماچا", href: "/shop?category=matcha-tools" },
-      { label: "ابزار قهوه", href: "/shop?category=coffee-tools" },
-      { label: "لوازم جانبی", href: "/shop?category=accessories" },
-    ],
-  },
+/* -------------------------------------------------------------------------- */
+/* Category Helpers                                                           */
+/* -------------------------------------------------------------------------- */
+
+function normalizeText(value: string | null | undefined) {
+  if (!value) {
+    return "";
+  }
+
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/ي/g, "ی")
+    .replace(/ى/g, "ی")
+    .replace(/ك/g, "ک")
+    .replace(/ة/g, "ه")
+    .replace(/ۀ/g, "ه")
+    .replace(/ؤ/g, "و")
+    .replace(/إ/g, "ا")
+    .replace(/أ/g, "ا")
+    .replace(/آ/g, "ا")
+    .replace(/‌/g, " ")
+    .replace(/\s+/g, " ");
+}
+
+/*
+ * عنوان نمایشی بعضی دسته‌بندی‌ها
+ *
+ * اگر دسته جدیدی در دیتابیس اضافه شود و اینجا نباشد،
+ * خود name دیتابیس نمایش داده می‌شود.
+ */
+function getCategoryLabel(
+  name: string,
+  slug: string
+) {
+  const normalizedSlug =
+    normalizeText(slug);
+
+  const labels: Record<string, string> = {
+    matcha: "ماچا",
+    coffee: "قهوه",
+    tea: "چای",
+    accessories: "ابزار دم‌آوری",
+    sets: "پک و ست",
+  };
+
+  return (
+    labels[normalizedSlug] ??
+    name
+  );
+}
+
+/*
+ * ترتیب پیشنهادی دسته‌بندی‌ها
+ */
+const categoryOrder = [
+  "matcha",
+  "coffee",
+  "tea",
+  "accessories",
+  "sets",
 ];
 
-export default function Navbar() {
-  const [open, setOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+/* -------------------------------------------------------------------------- */
+/* Search Helpers                                                             */
+/* -------------------------------------------------------------------------- */
 
-  const [shopOpen, setShopOpen] = useState(false);
-  const [mobileShopOpen, setMobileShopOpen] = useState(false);
-  const [mobileCategoryOpen, setMobileCategoryOpen] = useState<string | null>(
-    null
+function createSearchTokens(
+  value: string
+) {
+  return normalizeText(value)
+    .split(" ")
+    .filter(Boolean);
+}
+
+function matchesSearch(
+  product: Product,
+  query: string
+) {
+  const normalizedQuery =
+    normalizeText(query);
+
+  if (!normalizedQuery) {
+    return false;
+  }
+
+  const searchableText =
+    normalizeText(
+      [
+        product.name,
+        product.description,
+        product.slug,
+        product.category?.name,
+        product.category?.slug,
+        product.brand?.name,
+        product.brand?.slug,
+      ]
+        .filter(Boolean)
+        .join(" ")
+    );
+
+  if (
+    searchableText.includes(
+      normalizedQuery
+    )
+  ) {
+    return true;
+  }
+
+  const tokens =
+    createSearchTokens(
+      normalizedQuery
+    );
+
+  return tokens.every((token) =>
+    searchableText.includes(token)
   );
+}
 
-  const [searchOpen, setSearchOpen] = useState(false);
+/* -------------------------------------------------------------------------- */
+/* Component                                                                  */
+/* -------------------------------------------------------------------------- */
 
+export default function Navbar() {
+  const router = useRouter();
   const pathname = usePathname();
+
   const { itemCount } = useCart();
+
+  const [open, setOpen] =
+    useState(false);
+
+  const [scrolled, setScrolled] =
+    useState(false);
+
+  const [shopOpen, setShopOpen] =
+    useState(false);
+
+  const [mobileShopOpen, setMobileShopOpen] =
+    useState(false);
+
+  const [mobileCategoryOpen, setMobileCategoryOpen] =
+    useState<string | null>(null);
+
+  const [searchOpen, setSearchOpen] =
+    useState(false);
+
+  const [searchQuery, setSearchQuery] =
+    useState("");
+
+  const [products, setProducts] =
+    useState<Product[]>([]);
+
+  const [productsLoading, setProductsLoading] =
+    useState(true);
+
+  const searchInputRef =
+    useRef<HTMLInputElement | null>(null);
+
+  /* ------------------------------------------------------------------------ */
+  /* Load Products                                                            */
+  /* ------------------------------------------------------------------------ */
+
+  useEffect(() => {
+    let mounted = true;
+
+    fetchProducts()
+      .then((data) => {
+        if (!mounted) {
+          return;
+        }
+
+        setProducts(data);
+      })
+      .catch((error) => {
+        console.error(
+          "Failed loading products for navbar:",
+          error
+        );
+      })
+      .finally(() => {
+        if (!mounted) {
+          return;
+        }
+
+        setProductsLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  /* ------------------------------------------------------------------------ */
+  /* Build Categories From Real Products                                     */
+  /* ------------------------------------------------------------------------ */
+
+  const shopCategories =
+    useMemo(() => {
+      const categoryMap =
+        new Map<
+          string,
+          {
+            title: string;
+            slug: string;
+          }
+        >();
+
+      products.forEach((product) => {
+        const category =
+          product.category;
+
+        if (!category) {
+          return;
+        }
+
+        const slug =
+          normalizeText(category.slug);
+
+        if (!slug) {
+          return;
+        }
+
+        if (
+          categoryMap.has(slug)
+        ) {
+          return;
+        }
+
+        categoryMap.set(slug, {
+          title: getCategoryLabel(
+            category.name,
+            category.slug
+          ),
+          slug: category.slug,
+        });
+      });
+
+      return Array.from(
+        categoryMap.values()
+      ).sort((a, b) => {
+        const aIndex =
+          categoryOrder.indexOf(
+            normalizeText(a.slug)
+          );
+
+        const bIndex =
+          categoryOrder.indexOf(
+            normalizeText(b.slug)
+          );
+
+        if (
+          aIndex !== -1 &&
+          bIndex !== -1
+        ) {
+          return aIndex - bIndex;
+        }
+
+        if (aIndex !== -1) {
+          return -1;
+        }
+
+        if (bIndex !== -1) {
+          return 1;
+        }
+
+        return a.title.localeCompare(
+          b.title,
+          "fa"
+        );
+      });
+    }, [products]);
+
+  /* ------------------------------------------------------------------------ */
+  /* Scroll                                                                   */
+  /* ------------------------------------------------------------------------ */
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
+      setScrolled(
+        window.scrollY > 50
+      );
     };
 
     handleScroll();
 
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener(
+      "scroll",
+      handleScroll
+    );
 
     return () => {
-      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener(
+        "scroll",
+        handleScroll
+      );
     };
   }, []);
+
+  /* ------------------------------------------------------------------------ */
+  /* Focus Search                                                             */
+  /* ------------------------------------------------------------------------ */
+
+  useEffect(() => {
+    if (!searchOpen) {
+      return;
+    }
+
+    const timeout =
+      window.setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 50);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [searchOpen]);
+
+  /* ------------------------------------------------------------------------ */
+  /* Close Search On Route Change                                             */
+  /* ------------------------------------------------------------------------ */
+
+  useEffect(() => {
+    setSearchOpen(false);
+    setSearchQuery("");
+  }, [pathname]);
+
+  /* ------------------------------------------------------------------------ */
+  /* Escape                                                                   */
+  /* ------------------------------------------------------------------------ */
+
+  useEffect(() => {
+    const handleKeyDown = (
+      event: KeyboardEvent
+    ) => {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      setSearchOpen(false);
+      setSearchQuery("");
+    };
+
+    window.addEventListener(
+      "keydown",
+      handleKeyDown
+    );
+
+    return () => {
+      window.removeEventListener(
+        "keydown",
+        handleKeyDown
+      );
+    };
+  }, []);
+
+  /* ------------------------------------------------------------------------ */
+  /* Mobile Menu                                                              */
+  /* ------------------------------------------------------------------------ */
 
   const closeMobileMenu = () => {
     setOpen(false);
@@ -111,11 +422,118 @@ export default function Navbar() {
     setMobileCategoryOpen(null);
   };
 
-  const toggleMobileCategory = (title: string) => {
-    setMobileCategoryOpen((current) =>
-      current === title ? null : title
+  const toggleMobileCategory = (
+    title: string
+  ) => {
+    setMobileCategoryOpen(
+      (current) =>
+        current === title
+          ? null
+          : title
     );
   };
+
+  /* ------------------------------------------------------------------------ */
+  /* Category Navigation                                                      */
+  /* ------------------------------------------------------------------------ */
+
+  const goToCategory = (
+    slug: string
+  ) => {
+    /*
+     * مهم:
+     * وقتی کاربر از Search وارد صفحه شده،
+     * با انتخاب Category باید search قبلی حذف شود.
+     */
+
+    setShopOpen(false);
+    setMobileShopOpen(false);
+    setMobileCategoryOpen(null);
+    setOpen(false);
+
+    router.push(
+      `/shop?category=${encodeURIComponent(
+        slug
+      )}`
+    );
+  };
+
+  /* ------------------------------------------------------------------------ */
+  /* Search                                                                   */
+  /* ------------------------------------------------------------------------ */
+
+  const normalizedSearchQuery =
+    normalizeText(searchQuery);
+
+  const searchResults =
+    useMemo(() => {
+      if (!normalizedSearchQuery) {
+        return [];
+      }
+
+      return products
+        .filter((product) =>
+          matchesSearch(
+            product,
+            normalizedSearchQuery
+          )
+        )
+        .slice(0, 6);
+    }, [
+      products,
+      normalizedSearchQuery,
+    ]);
+
+  const hasSearchQuery =
+    normalizedSearchQuery.length > 0;
+
+  const openSearch = () => {
+    setSearchOpen(true);
+
+    if (open) {
+      closeMobileMenu();
+    }
+  };
+
+  const closeSearch = () => {
+    setSearchOpen(false);
+    setSearchQuery("");
+  };
+
+  const submitSearch = () => {
+    const query =
+      searchQuery.trim();
+
+    if (!query) {
+      return;
+    }
+
+    closeSearch();
+
+    router.push(
+      `/shop?search=${encodeURIComponent(
+        query
+      )}`
+    );
+  };
+
+  const handleSearchKeyDown = (
+    event: React.KeyboardEvent<HTMLInputElement>
+  ) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      submitSearch();
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeSearch();
+    }
+  };
+
+  /* ------------------------------------------------------------------------ */
+  /* Render                                                                   */
+  /* ------------------------------------------------------------------------ */
 
   return (
     <header
@@ -139,7 +557,9 @@ export default function Navbar() {
       <Container>
         <nav className="flex h-[76px] items-center justify-between">
 
-          {/* Logo */}
+          {/* ================================================================= */}
+          {/* Logo                                                              */}
+          {/* ================================================================= */}
 
           <Link
             href="/"
@@ -197,7 +617,9 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* Desktop Navigation */}
+          {/* ================================================================= */}
+          {/* Desktop Navigation                                                */}
+          {/* ================================================================= */}
 
           <div className="hidden items-center gap-7 md:flex">
 
@@ -237,12 +659,18 @@ export default function Navbar() {
               )}
             </Link>
 
-            {/* Desktop Shop */}
+            {/* ================================================================= */}
+            {/* Desktop Shop                                                      */}
+            {/* ================================================================= */}
 
             <div
               className="relative"
-              onMouseEnter={() => setShopOpen(true)}
-              onMouseLeave={() => setShopOpen(false)}
+              onMouseEnter={() =>
+                setShopOpen(true)
+              }
+              onMouseLeave={() =>
+                setShopOpen(false)
+              }
             >
               <Link
                 href="/shop"
@@ -255,7 +683,9 @@ export default function Navbar() {
                   font-semibold
                   transition-colors
                   ${
-                    pathname.startsWith("/shop")
+                    pathname.startsWith(
+                      "/shop"
+                    )
                       ? "text-[#d97706]"
                       : scrolled
                         ? "text-[#355e3b]"
@@ -271,11 +701,17 @@ export default function Navbar() {
                   className={`
                     transition-transform
                     duration-300
-                    ${shopOpen ? "rotate-180" : ""}
+                    ${
+                      shopOpen
+                        ? "rotate-180"
+                        : ""
+                    }
                   `}
                 />
 
-                {pathname.startsWith("/shop") && (
+                {pathname.startsWith(
+                  "/shop"
+                ) && (
                   <span
                     className="
                       absolute
@@ -290,7 +726,9 @@ export default function Navbar() {
                 )}
               </Link>
 
-              {/* Desktop Mega Menu */}
+              {/* ============================================================= */}
+              {/* Desktop Mega Menu                                               */}
+              {/* ============================================================= */}
 
               {shopOpen && (
                 <div
@@ -314,26 +752,69 @@ export default function Navbar() {
                       shadow-2xl
                     "
                   >
-                    <div className="grid grid-cols-4 gap-6">
 
-                      {shopCategories.map((category) => (
-                        <div key={category.title}>
-                          <h3
-                            className="
-                              mb-4
-                              text-sm
-                              font-bold
-                              text-[#203c27]
-                            "
-                          >
-                            {category.title}
-                          </h3>
-
-                          <div className="space-y-2">
-                            {category.items.map((item) => (
+                    {productsLoading ? (
+                      <div className="py-8 text-center text-sm text-slate-400">
+                        در حال بارگذاری دسته‌بندی‌ها...
+                      </div>
+                    ) : shopCategories.length === 0 ? (
+                      <div className="py-8 text-center text-sm text-slate-400">
+                        دسته‌بندی‌ای پیدا نشد.
+                      </div>
+                    ) : (
+                      <div
+                        className={`
+                          grid
+                          gap-6
+                          ${
+                            shopCategories.length >= 4
+                              ? "grid-cols-4"
+                              : shopCategories.length === 3
+                                ? "grid-cols-3"
+                                : shopCategories.length === 2
+                                  ? "grid-cols-2"
+                                  : "grid-cols-1"
+                          }
+                        `}
+                      >
+                        {shopCategories.map(
+                          (category) => (
+                            <div
+                              key={
+                                category.slug
+                              }
+                            >
                               <Link
-                                key={item.href}
-                                href={item.href}
+                                href={`/shop?category=${encodeURIComponent(
+                                  category.slug
+                                )}`}
+                                onClick={() =>
+                                  setShopOpen(
+                                    false
+                                  )
+                                }
+                                className="
+                                  mb-4
+                                  block
+                                  text-sm
+                                  font-bold
+                                  text-[#203c27]
+                                  transition
+                                  hover:text-[#d97706]
+                                "
+                              >
+                                {category.title}
+                              </Link>
+
+                              <Link
+                                href={`/shop?category=${encodeURIComponent(
+                                  category.slug
+                                )}`}
+                                onClick={() =>
+                                  setShopOpen(
+                                    false
+                                  )
+                                }
                                 className="
                                   block
                                   rounded-xl
@@ -346,14 +827,20 @@ export default function Navbar() {
                                   hover:text-[#d97706]
                                 "
                               >
-                                {item.label}
+                                همه محصولات{" "}
+                                {
+                                  category.title
+                                }
                               </Link>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
+                            </div>
+                          )
+                        )}
+                      </div>
+                    )}
 
-                    </div>
+                    {/* ========================================================= */}
+                    {/* All Products                                                */}
+                    {/* ========================================================= */}
 
                     <div
                       className="
@@ -365,6 +852,9 @@ export default function Navbar() {
                     >
                       <Link
                         href="/shop"
+                        onClick={() =>
+                          setShopOpen(false)
+                        }
                         className="
                           inline-flex
                           items-center
@@ -385,52 +875,59 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Other Desktop Links */}
+            {/* ================================================================= */}
+            {/* Other Desktop Links                                               */}
+            {/* ================================================================= */}
 
-            {navLinks.slice(1).map((item) => {
-              const isActive =
-                pathname === item.href;
+            {navLinks
+              .slice(1)
+              .map((item) => {
+                const isActive =
+                  pathname ===
+                  item.href;
 
-              return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className={`
-                    relative
-                    text-sm
-                    font-semibold
-                    transition-colors
-                    ${
-                      isActive
-                        ? "text-[#d97706]"
-                        : scrolled
-                          ? "text-[#355e3b]"
-                          : "text-white"
-                    }
-                    hover:text-[#d97706]
-                  `}
-                >
-                  {item.label}
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className={`
+                      relative
+                      text-sm
+                      font-semibold
+                      transition-colors
+                      ${
+                        isActive
+                          ? "text-[#d97706]"
+                          : scrolled
+                            ? "text-[#355e3b]"
+                            : "text-white"
+                      }
+                      hover:text-[#d97706]
+                    `}
+                  >
+                    {item.label}
 
-                  {isActive && (
-                    <span
-                      className="
-                        absolute
-                        -bottom-2
-                        right-0
-                        h-0.5
-                        w-5
-                        rounded-full
-                        bg-[#d97706]
-                      "
-                    />
-                  )}
-                </Link>
-              );
-            })}
+                    {isActive && (
+                      <span
+                        className="
+                          absolute
+                          -bottom-2
+                          right-0
+                          h-0.5
+                          w-5
+                          rounded-full
+                          bg-[#d97706]
+                        "
+                      />
+                    )}
+                  </Link>
+                );
+              })}
           </div>
 
-          {/* Actions */}
+          {/* ================================================================= */}
+          {/* Actions                                                            */}
+          {/* ================================================================= */}
 
           <div className="flex items-center gap-3">
 
@@ -438,10 +935,19 @@ export default function Navbar() {
 
             <button
               type="button"
-              onClick={() =>
-                setSearchOpen((value) => !value)
+              onClick={() => {
+                if (searchOpen) {
+                  closeSearch();
+                } else {
+                  openSearch();
+                }
+              }}
+              aria-label={
+                searchOpen
+                  ? "بستن جستجو"
+                  : "جستجو"
               }
-              aria-label="جستجو"
+              aria-expanded={searchOpen}
               className="
                 hidden
                 h-11
@@ -464,7 +970,7 @@ export default function Navbar() {
               )}
             </button>
 
-            {/* Desktop Account */}
+            {/* Account */}
 
             <Link
               href="/login"
@@ -528,7 +1034,9 @@ export default function Navbar() {
                     text-white
                   "
                 >
-                  {itemCount.toLocaleString("fa-IR")}
+                  {itemCount.toLocaleString(
+                    "fa-IR"
+                  )}
                 </span>
               )}
             </Link>
@@ -561,11 +1069,18 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => {
-                setOpen((value) => !value);
+                setOpen(
+                  (value) => !value
+                );
 
                 if (open) {
-                  setMobileShopOpen(false);
-                  setMobileCategoryOpen(null);
+                  setMobileShopOpen(
+                    false
+                  );
+
+                  setMobileCategoryOpen(
+                    null
+                  );
                 }
               }}
               aria-label={
@@ -595,7 +1110,9 @@ export default function Navbar() {
           </div>
         </nav>
 
-        {/* Search Panel */}
+        {/* =================================================================== */}
+        {/* Search Panel                                                        */}
+        {/* =================================================================== */}
 
         {searchOpen && (
           <div
@@ -606,43 +1123,359 @@ export default function Navbar() {
               py-4
             "
           >
-            <div className="relative">
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                submitSearch();
+              }}
+              className="relative"
+            >
               <Search
                 size={18}
                 className="
                   absolute
                   right-4
                   top-1/2
+                  z-10
                   -translate-y-1/2
                   text-[#355e3b]
                 "
               />
 
               <input
-                autoFocus
+                ref={searchInputRef}
                 type="search"
+                value={searchQuery}
+                onChange={(event) =>
+                  setSearchQuery(
+                    event.target.value
+                  )
+                }
+                onKeyDown={
+                  handleSearchKeyDown
+                }
                 placeholder="جستجوی محصول، ماچا، قهوه و..."
+                autoComplete="off"
+                spellCheck={false}
                 className="
                   h-12
                   w-full
                   rounded-2xl
                   border
                   border-[#355e3b]/10
-                  bg-white/80
+                  bg-white/90
                   pr-12
-                  pl-4
+                  pl-12
                   text-sm
                   text-[#203c27]
                   outline-none
                   placeholder:text-slate-400
                   focus:border-[#d97706]
+                  focus:ring-2
+                  focus:ring-[#d97706]/10
                 "
               />
-            </div>
+
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSearchQuery("")
+                  }
+                  aria-label="پاک کردن جستجو"
+                  className="
+                    absolute
+                    left-3
+                    top-1/2
+                    flex
+                    h-8
+                    w-8
+                    -translate-y-1/2
+                    items-center
+                    justify-center
+                    rounded-full
+                    text-slate-400
+                    transition
+                    hover:bg-[#f8f5ed]
+                    hover:text-[#355e3b]
+                  "
+                >
+                  <X size={16} />
+                </button>
+              )}
+
+              {/* Search Results */}
+
+              {hasSearchQuery && (
+                <div
+                  className="
+                    absolute
+                    right-0
+                    top-[calc(100%+10px)]
+                    z-[1000]
+                    w-full
+                    overflow-hidden
+                    rounded-2xl
+                    border
+                    border-[#355e3b]/10
+                    bg-white
+                    shadow-2xl
+                  "
+                >
+                  {/* Loading */}
+
+                  {productsLoading && (
+                    <div
+                      className="
+                        px-5
+                        py-7
+                        text-center
+                        text-sm
+                        text-slate-400
+                      "
+                    >
+                      در حال جستجوی محصولات...
+                    </div>
+                  )}
+
+                  {/* No Results */}
+
+                  {!productsLoading &&
+                    searchResults.length ===
+                      0 && (
+                      <div
+                        className="
+                          px-5
+                          py-8
+                          text-center
+                        "
+                      >
+                        <div
+                          className="
+                            mx-auto
+                            flex
+                            h-12
+                            w-12
+                            items-center
+                            justify-center
+                            rounded-full
+                            bg-[#f8f5ed]
+                            text-[#355e3b]
+                          "
+                        >
+                          <Search
+                            size={20}
+                          />
+                        </div>
+
+                        <p
+                          className="
+                            mt-4
+                            text-sm
+                            font-semibold
+                            text-[#203c27]
+                          "
+                        >
+                          محصولی پیدا نشد
+                        </p>
+
+                        <p
+                          className="
+                            mt-1
+                            text-xs
+                            leading-6
+                            text-slate-400
+                          "
+                        >
+                          برای «
+                          {searchQuery}
+                          » نتیجه‌ای پیدا نشد.
+                        </p>
+
+                        <p
+                          className="
+                            mt-1
+                            text-xs
+                            text-slate-400
+                          "
+                        >
+                          عبارت دیگری را امتحان کنید.
+                        </p>
+                      </div>
+                    )}
+
+                  {/* Results */}
+
+                  {!productsLoading &&
+                    searchResults.length >
+                      0 && (
+                      <div className="py-2">
+
+                        {searchResults.map(
+                          (product) => (
+                            <Link
+                              key={product.id}
+                              href={`/shop/${product.slug}`}
+                              onClick={() =>
+                                closeSearch()
+                              }
+                              className="
+                                flex
+                                items-center
+                                gap-3
+                                px-4
+                                py-3
+                                text-right
+                                transition
+                                hover:bg-[#f8f5ed]
+                              "
+                            >
+                              <div
+                                className="
+                                  h-12
+                                  w-12
+                                  shrink-0
+                                  overflow-hidden
+                                  rounded-xl
+                                  bg-[#f2e9d8]
+                                "
+                              >
+                                {product.image ? (
+                                  <img
+                                    src={
+                                      product.image
+                                    }
+                                    alt={
+                                      product.name
+                                    }
+                                    className="
+                                      h-full
+                                      w-full
+                                      object-cover
+                                    "
+                                  />
+                                ) : (
+                                  <div
+                                    className="
+                                      flex
+                                      h-full
+                                      w-full
+                                      items-center
+                                      justify-center
+                                      text-[10px]
+                                      text-[#355e3b]/50
+                                    "
+                                  >
+                                    بدون تصویر
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="min-w-0 flex-1">
+                                <h3
+                                  className="
+                                    truncate
+                                    text-sm
+                                    font-semibold
+                                    text-[#203c27]
+                                  "
+                                >
+                                  {product.name}
+                                </h3>
+
+                                {product.category && (
+                                  <p
+                                    className="
+                                      mt-1
+                                      truncate
+                                      text-[11px]
+                                      text-[#b58a47]
+                                    "
+                                  >
+                                    {
+                                      product
+                                        .category
+                                        .name
+                                    }
+                                  </p>
+                                )}
+                              </div>
+
+                              <div
+                                className="
+                                  shrink-0
+                                  text-left
+                                "
+                              >
+                                <span
+                                  className="
+                                    text-xs
+                                    font-bold
+                                    text-[#355e3b]
+                                  "
+                                >
+                                  {product.price.toLocaleString(
+                                    "fa-IR"
+                                  )}
+                                </span>
+
+                                <span
+                                  className="
+                                    mr-1
+                                    text-[10px]
+                                    text-slate-400
+                                  "
+                                >
+                                  تومان
+                                </span>
+                              </div>
+                            </Link>
+                          )
+                        )}
+
+                        {/* All Results */}
+
+                        <div
+                          className="
+                            border-t
+                            border-[#355e3b]/10
+                            px-4
+                            py-3
+                          "
+                        >
+                          <button
+                            type="submit"
+                            className="
+                              flex
+                              w-full
+                              items-center
+                              justify-center
+                              rounded-xl
+                              bg-[#f8f5ed]
+                              px-4
+                              py-2.5
+                              text-xs
+                              font-bold
+                              text-[#355e3b]
+                              transition
+                              hover:bg-[#355e3b]
+                              hover:text-white
+                            "
+                          >
+                            مشاهده همه نتایج
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                </div>
+              )}
+            </form>
           </div>
         )}
 
-        {/* Mobile Navigation */}
+        {/* =================================================================== */}
+        {/* Mobile Navigation                                                   */}
+        {/* =================================================================== */}
 
         {open && (
           <div
@@ -655,7 +1488,6 @@ export default function Navbar() {
               md:hidden
             "
           >
-
             {/* Home */}
 
             <Link
@@ -679,12 +1511,11 @@ export default function Navbar() {
               خانه
             </Link>
 
-            {/* Shop Accordion */}
+            {/* =============================================================== */}
+            {/* Mobile Shop                                                      */}
+            {/* =============================================================== */}
 
             <div className="mt-1">
-
-              {/* Shop Header */}
-
               <div
                 className={`
                   flex
@@ -692,7 +1523,9 @@ export default function Navbar() {
                   rounded-2xl
                   transition
                   ${
-                    pathname.startsWith("/shop")
+                    pathname.startsWith(
+                      "/shop"
+                    )
                       ? "bg-[#f8f5ed]"
                       : "hover:bg-[#f8f5ed]"
                   }
@@ -708,7 +1541,9 @@ export default function Navbar() {
                     text-sm
                     font-semibold
                     ${
-                      pathname.startsWith("/shop")
+                      pathname.startsWith(
+                        "/shop"
+                      )
                         ? "text-[#d97706]"
                         : "text-[#355e3b]"
                     }
@@ -724,7 +1559,9 @@ export default function Navbar() {
                       (value) => !value
                     )
                   }
-                  aria-expanded={mobileShopOpen}
+                  aria-expanded={
+                    mobileShopOpen
+                  }
                   aria-label={
                     mobileShopOpen
                       ? "بستن فروشگاه"
@@ -754,7 +1591,7 @@ export default function Navbar() {
                 </button>
               </div>
 
-              {/* Shop Categories */}
+              {/* Categories */}
 
               <div
                 className={`
@@ -769,7 +1606,6 @@ export default function Navbar() {
                 `}
               >
                 <div className="min-h-0 overflow-hidden">
-
                   <div
                     className="
                       mr-4
@@ -779,121 +1615,165 @@ export default function Navbar() {
                       pr-3
                     "
                   >
+                    {productsLoading ? (
+                      <div className="px-3 py-4 text-xs text-slate-400">
+                        در حال بارگذاری...
+                      </div>
+                    ) : shopCategories.length ===
+                      0 ? (
+                      <div className="px-3 py-4 text-xs text-slate-400">
+                        دسته‌بندی‌ای پیدا نشد.
+                      </div>
+                    ) : (
+                      shopCategories.map(
+                        (category) => {
+                          const isOpen =
+                            mobileCategoryOpen ===
+                            category.title;
 
-                    {shopCategories.map(
-                      (category) => {
-                        const isOpen =
-                          mobileCategoryOpen ===
-                          category.title;
-
-                        return (
-                          <div
-                            key={category.title}
-                            className="mb-1"
-                          >
-
-                            {/* Category Header */}
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                toggleMobileCategory(
-                                  category.title
-                                )
+                          return (
+                            <div
+                              key={
+                                category.slug
                               }
-                              aria-expanded={isOpen}
-                              className="
-                                flex
-                                w-full
-                                items-center
-                                justify-between
-                                rounded-xl
-                                px-3
-                                py-2.5
-                                text-right
-                                text-sm
-                                font-semibold
-                                text-[#355e3b]
-                                transition
-                                hover:bg-[#f8f5ed]
-                              "
+                              className="mb-1"
                             >
-                              <span>
-                                {category.title}
-                              </span>
+                              <div
+                                className="
+                                  flex
+                                  items-center
+                                  rounded-xl
+                                  transition
+                                  hover:bg-[#f8f5ed]
+                                "
+                              >
+                                <Link
+                                  href={`/shop?category=${encodeURIComponent(
+                                    category.slug
+                                  )}`}
+                                  onClick={
+                                    closeMobileMenu
+                                  }
+                                  className="
+                                    flex-1
+                                    px-3
+                                    py-2.5
+                                    text-right
+                                    text-sm
+                                    font-semibold
+                                    text-[#355e3b]
+                                    transition
+                                    hover:text-[#d97706]
+                                  "
+                                >
+                                  {
+                                    category.title
+                                  }
+                                </Link>
 
-                              <ChevronDown
-                                size={16}
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    toggleMobileCategory(
+                                      category.title
+                                    )
+                                  }
+                                  aria-expanded={
+                                    isOpen
+                                  }
+                                  aria-label={
+                                    isOpen
+                                      ? `بستن ${category.title}`
+                                      : `باز کردن ${category.title}`
+                                  }
+                                  className="
+                                    flex
+                                    h-10
+                                    w-10
+                                    items-center
+                                    justify-center
+                                    text-[#355e3b]
+                                  "
+                                >
+                                  <ChevronDown
+                                    size={
+                                      16
+                                    }
+                                    className={`
+                                      transition-transform
+                                      duration-300
+                                      ${
+                                        isOpen
+                                          ? "rotate-180 text-[#d97706]"
+                                          : ""
+                                      }
+                                    `}
+                                  />
+                                </button>
+                              </div>
+
+                              <div
                                 className={`
-                                  transition-transform
+                                  grid
+                                  transition-all
                                   duration-300
                                   ${
                                     isOpen
-                                      ? "rotate-180 text-[#d97706]"
-                                      : ""
+                                      ? "grid-rows-[1fr] opacity-100"
+                                      : "grid-rows-[0fr] opacity-0"
                                   }
                                 `}
-                              />
-                            </button>
-
-                            {/* Category Items */}
-
-                            <div
-                              className={`
-                                grid
-                                transition-all
-                                duration-300
-                                ${
-                                  isOpen
-                                    ? "grid-rows-[1fr] opacity-100"
-                                    : "grid-rows-[0fr] opacity-0"
-                                }
-                              `}
-                            >
-                              <div className="min-h-0 overflow-hidden">
-
-                                <div className="mr-3 space-y-1 border-r border-[#d97706]/10 pr-3">
-
-                                  {category.items.map(
-                                    (item) => (
-                                      <Link
-                                        key={item.href}
-                                        href={item.href}
-                                        onClick={
-                                          closeMobileMenu
-                                        }
-                                        className="
-                                          block
-                                          rounded-lg
-                                          px-3
-                                          py-2
-                                          text-xs
-                                          text-slate-500
-                                          transition
-                                          hover:bg-[#f8f5ed]
-                                          hover:text-[#d97706]
-                                        "
-                                      >
-                                        {item.label}
-                                      </Link>
-                                    )
-                                  )}
-
+                              >
+                                <div className="min-h-0 overflow-hidden">
+                                  <div
+                                    className="
+                                      mr-3
+                                      space-y-1
+                                      border-r
+                                      border-[#d97706]/10
+                                      pr-3
+                                    "
+                                  >
+                                    <Link
+                                      href={`/shop?category=${encodeURIComponent(
+                                        category.slug
+                                      )}`}
+                                      onClick={
+                                        closeMobileMenu
+                                      }
+                                      className="
+                                        block
+                                        rounded-lg
+                                        px-3
+                                        py-2
+                                        text-xs
+                                        text-slate-500
+                                        transition
+                                        hover:bg-[#f8f5ed]
+                                        hover:text-[#d97706]
+                                      "
+                                    >
+                                      همه محصولات{" "}
+                                      {
+                                        category.title
+                                      }
+                                    </Link>
+                                  </div>
                                 </div>
-
                               </div>
                             </div>
-
-                          </div>
-                        );
-                      }
+                          );
+                        }
+                      )
                     )}
 
                     {/* All Products */}
 
                     <Link
                       href="/shop"
-                      onClick={closeMobileMenu}
+                      onClick={
+                        closeMobileMenu
+                      }
                       className="
                         mt-2
                         flex
@@ -914,56 +1794,59 @@ export default function Navbar() {
                         مشاهده همه محصولات
                       </span>
 
-                      <span>
-                        ←
-                      </span>
+                      <span>←</span>
                     </Link>
-
                   </div>
-
                 </div>
               </div>
-
             </div>
 
-            {/* Other Mobile Links */}
+            {/* =============================================================== */}
+            {/* Other Mobile Links                                               */}
+            {/* =============================================================== */}
 
-            {navLinks.slice(1).map((item) => {
-              const isActive =
-                pathname === item.href;
+            {navLinks
+              .slice(1)
+              .map((item) => {
+                const isActive =
+                  pathname ===
+                  item.href;
 
-              return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  onClick={closeMobileMenu}
-                  className={`
-                    block
-                    rounded-2xl
-                    px-4
-                    py-3
-                    text-sm
-                    font-semibold
-                    transition
-                    ${
-                      isActive
-                        ? "bg-[#f8f5ed] text-[#d97706]"
-                        : "text-[#355e3b] hover:bg-[#f8f5ed]"
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    onClick={
+                      closeMobileMenu
                     }
-                  `}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
+                    className={`
+                      block
+                      rounded-2xl
+                      px-4
+                      py-3
+                      text-sm
+                      font-semibold
+                      transition
+                      ${
+                        isActive
+                          ? "bg-[#f8f5ed] text-[#d97706]"
+                          : "text-[#355e3b] hover:bg-[#f8f5ed]"
+                      }
+                    `}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
 
             {/* Mobile Search */}
 
             <button
               type="button"
-              onClick={() =>
-                setSearchOpen((value) => !value)
-              }
+              onClick={() => {
+                openSearch();
+                setOpen(false);
+              }}
               className="
                 mt-1
                 flex
@@ -983,7 +1866,6 @@ export default function Navbar() {
               <Search size={18} />
               جستجو
             </button>
-
           </div>
         )}
       </Container>

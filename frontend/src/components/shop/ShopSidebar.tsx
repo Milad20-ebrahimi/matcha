@@ -17,8 +17,7 @@ export type ShopCategory =
   | "Matcha"
   | "Coffee"
   | "Tea"
-  | "Accessories"
-  | "Sets";
+  | "Accessories";
 
 export type ShopPriceRange =
   | "all"
@@ -54,30 +53,29 @@ interface ShopSidebarProps {
 /* Categories                                                                 */
 /* -------------------------------------------------------------------------- */
 
-const categories = [
+const categories: {
+  label: string;
+  value: ShopCategory;
+}[] = [
   {
     label: "همه محصولات",
-    value: "all" as const,
+    value: "all",
   },
   {
     label: "ماچا",
-    value: "Matcha" as const,
+    value: "Matcha",
   },
   {
     label: "قهوه",
-    value: "Coffee" as const,
+    value: "Coffee",
   },
   {
     label: "چای",
-    value: "Tea" as const,
+    value: "Tea",
   },
   {
     label: "ابزار دم‌آوری",
-    value: "Accessories" as const,
-  },
-  {
-    label: "پک و ست",
-    value: "Sets" as const,
+    value: "Accessories",
   },
 ];
 
@@ -85,26 +83,29 @@ const categories = [
 /* Price ranges                                                               */
 /* -------------------------------------------------------------------------- */
 
-const priceRanges = [
+const priceRanges: {
+  label: string;
+  value: ShopPriceRange;
+}[] = [
   {
     label: "همه قیمت‌ها",
-    value: "all" as const,
+    value: "all",
   },
   {
     label: "زیر ۵۰۰ هزار تومان",
-    value: "under-500" as const,
+    value: "under-500",
   },
   {
-    label: "۵۰۰ هزار تا ۱ میلیون",
-    value: "500-1000" as const,
+    label: "۵۰۰ هزار تا ۱ میلیون تومان",
+    value: "500-1000",
   },
   {
-    label: "۱ تا ۲ میلیون",
-    value: "1000-2000" as const,
+    label: "۱ تا ۲ میلیون تومان",
+    value: "1000-2000",
   },
   {
-    label: "بالای ۲ میلیون",
-    value: "over-2000" as const,
+    label: "بالای ۲ میلیون تومان",
+    value: "over-2000",
   },
 ];
 
@@ -123,15 +124,9 @@ export default function ShopSidebar({
   onAvailabilityChange,
   onReset,
 }: ShopSidebarProps) {
-  /*
-   * وضعیت باز و بسته بودن دسته‌بندی
-   */
   const [categoryOpen, setCategoryOpen] =
     useState(true);
 
-  /*
-   * وضعیت باز و بسته بودن محدوده قیمت
-   */
   const [priceOpen, setPriceOpen] =
     useState(true);
 
@@ -251,7 +246,7 @@ export default function ShopSidebar({
             </div>
           </div>
 
-          {/* Mobile Close Button */}
+          {/* Mobile Close */}
 
           <button
             type="button"
@@ -289,8 +284,6 @@ export default function ShopSidebar({
             pb-6
           "
         >
-          {/* Category Header */}
-
           <button
             type="button"
             onClick={() =>
@@ -332,8 +325,6 @@ export default function ShopSidebar({
             />
           </button>
 
-          {/* Category Content */}
-
           <div
             className={`
               overflow-hidden
@@ -347,65 +338,66 @@ export default function ShopSidebar({
             `}
           >
             <div className="space-y-1.5">
-              {categories.map((item) => (
-                <label
-                  key={item.value}
-                  className="
-                    group
-                    flex
-                    cursor-pointer
-                    items-center
-                    rounded-2xl
-                    px-3
-                    py-2.5
-                    transition
-                    hover:bg-[#f2e9d8]/60
-                  "
-                >
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="category"
-                      value={item.value}
-                      checked={
-                        category ===
-                        item.value
-                      }
-                      onChange={() =>
-                        onCategoryChange(
-                          item.value
-                        )
-                      }
-                      className="
-                        h-4
-                        w-4
-                        accent-[#355e3b]
-                      "
-                    />
+              {categories.map((item) => {
+                const isSelected =
+                  category === item.value;
 
-                    <span
-                      className={`
-                        text-sm
-                        transition-colors
-                        ${
-                          category ===
-                          item.value
-                            ? "font-medium text-[#355e3b]"
-                            : "text-[#0d1a12]/70 group-hover:text-[#0d1a12]"
+                return (
+                  <label
+                    key={item.value}
+                    className="
+                      group
+                      flex
+                      cursor-pointer
+                      items-center
+                      rounded-2xl
+                      px-3
+                      py-2.5
+                      transition
+                      hover:bg-[#f2e9d8]/60
+                    "
+                  >
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="radio"
+                        name="category"
+                        value={item.value}
+                        checked={isSelected}
+                        onChange={() =>
+                          onCategoryChange(
+                            item.value
+                          )
                         }
-                      `}
-                    >
-                      {item.label}
-                    </span>
-                  </div>
-                </label>
-              ))}
+                        className="
+                          h-4
+                          w-4
+                          accent-[#355e3b]
+                        "
+                      />
+
+                      <span
+                        className={`
+                          text-sm
+                          transition-colors
+                          ${
+                            isSelected
+                              ? "font-medium text-[#355e3b]"
+                              : "text-[#0d1a12]/70 group-hover:text-[#0d1a12]"
+                          }
+                        `}
+                      >
+                        {item.label}
+                      </span>
+                    </div>
+                  </label>
+                );
+              })}
             </div>
           </div>
         </section>
 
         {/* ================================================================ */}
-        {/* Price                                                              */}
+        {/* Price                                                             */}
         {/* ================================================================ */}
 
         <section
@@ -415,8 +407,6 @@ export default function ShopSidebar({
             py-6
           "
         >
-          {/* Price Header */}
-
           <button
             type="button"
             onClick={() =>
@@ -458,8 +448,6 @@ export default function ShopSidebar({
             />
           </button>
 
-          {/* Price Content */}
-
           <div
             className={`
               overflow-hidden
@@ -473,58 +461,59 @@ export default function ShopSidebar({
             `}
           >
             <div className="space-y-1.5">
-              {priceRanges.map((item) => (
-                <label
-                  key={item.value}
-                  className="
-                    group
-                    flex
-                    cursor-pointer
-                    items-center
-                    gap-3
-                    rounded-2xl
-                    px-3
-                    py-2.5
-                    transition
-                    hover:bg-[#f2e9d8]/60
-                  "
-                >
-                  <input
-                    type="radio"
-                    name="price"
-                    value={item.value}
-                    checked={
-                      priceRange ===
-                      item.value
-                    }
-                    onChange={() =>
-                      onPriceRangeChange(
-                        item.value
-                      )
-                    }
-                    className="
-                      h-4
-                      w-4
-                      accent-[#355e3b]
-                    "
-                  />
+              {priceRanges.map((item) => {
+                const isSelected =
+                  priceRange === item.value;
 
-                  <span
-                    className={`
-                      text-sm
-                      transition-colors
-                      ${
-                        priceRange ===
-                        item.value
-                          ? "font-medium text-[#355e3b]"
-                          : "text-[#0d1a12]/70 group-hover:text-[#0d1a12]"
-                      }
-                    `}
+                return (
+                  <label
+                    key={item.value}
+                    className="
+                      group
+                      flex
+                      cursor-pointer
+                      items-center
+                      gap-3
+                      rounded-2xl
+                      px-3
+                      py-2.5
+                      transition
+                      hover:bg-[#f2e9d8]/60
+                    "
                   >
-                    {item.label}
-                  </span>
-                </label>
-              ))}
+                    <input
+                      type="radio"
+                      name="price"
+                      value={item.value}
+                      checked={isSelected}
+                      onChange={() =>
+                        onPriceRangeChange(
+                          item.value
+                        )
+                      }
+                      className="
+                        h-4
+                        w-4
+                        accent-[#355e3b]
+                      "
+                    />
+
+                    <span
+                      className={`
+                        text-sm
+                        transition-colors
+                        ${
+                          isSelected
+                            ? "font-medium text-[#355e3b]"
+                            : "text-[#0d1a12]/70 group-hover:text-[#0d1a12]"
+                        }
+                      `}
+                    >
+                      {item.label}
+                    </span>
+                  </label>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -602,7 +591,7 @@ export default function ShopSidebar({
         </section>
 
         {/* ================================================================ */}
-        {/* Reset                                                              */}
+        {/* Reset                                                             */}
         {/* ================================================================ */}
 
         <button

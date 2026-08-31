@@ -29,6 +29,13 @@
       "when": 1787273779599,
       "tag": "0003_mature_microchip",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788186545568,
+      "tag": "0004_majestic_mesmero",
+      "breakpoints": true
     }
   ]
 }
