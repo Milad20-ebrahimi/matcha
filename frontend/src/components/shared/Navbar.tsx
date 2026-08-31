@@ -44,16 +44,16 @@ const navLinks = [
   },
   {
     label: "وبلاگ",
-    href: "/about",
+    href: "/blog",
   },
   {
     label: "درباره ما",
     href: "/about",
   },
-  {
-    label: "رزرو میز",
-    href: "/contact",
-  },
+{
+  label: "رزرو میز",
+  href: "/reservation",
+},
 ];
 
 /* -------------------------------------------------------------------------- */
